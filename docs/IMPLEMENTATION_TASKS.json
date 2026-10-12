@@ -1,0 +1,207 @@
+{
+  "project": "urbynex",
+  "last_updated": "2026-10-12",
+  "phases": [
+    {
+      "phase_id": "P0",
+      "name": "Repository Inspection and Planning",
+      "status": "in_progress",
+      "milestones": [
+        {
+          "milestone_id": "M0.1",
+          "name": "Environment Verified",
+          "status": "completed",
+          "tasks": [
+            { "id": "P0-T1", "name": "Check Python version", "status": "completed", "result": "Python 3.14.7" },
+            { "id": "P0-T2", "name": "Check Node version", "status": "completed", "result": "Node 24.13.0" },
+            { "id": "P0-T3", "name": "Check Git version", "status": "completed", "result": "Git 2.52.0" },
+            { "id": "P0-T4", "name": "Check SUMO availability", "status": "completed", "result": "NOT installed - Engine A primary" },
+            { "id": "P0-T5", "name": "Check Python packages", "status": "completed", "result": "Fresh env - only pip 26.2.1" },
+            { "id": "P0-T6", "name": "Initialize git repository", "status": "completed", "result": "git init + remote set" }
+          ]
+        },
+        {
+          "milestone_id": "M0.2",
+          "name": "Planning Documents",
+          "status": "in_progress",
+          "tasks": [
+            { "id": "P0-T7", "name": "Write README.md", "status": "completed" },
+            { "id": "P0-T8", "name": "Write .gitignore", "status": "completed" },
+            { "id": "P0-T9", "name": "Write docs/PROJECT_VISION.md", "status": "completed" },
+            { "id": "P0-T10", "name": "Write docs/ARCHITECTURE.md", "status": "completed" },
+            { "id": "P0-T11", "name": "Write docs/IMPLEMENTATION_PLAN.md", "status": "completed" },
+            { "id": "P0-T12", "name": "Write docs/DATA_SOURCES.md", "status": "completed" },
+            { "id": "P0-T13", "name": "Write docs/SIMULATION_MODEL.md", "status": "completed" },
+            { "id": "P0-T14", "name": "Write docs/AI_AND_RAG.md", "status": "completed" },
+            { "id": "P0-T15", "name": "Write docs/TESTING_STRATEGY.md", "status": "completed" },
+            { "id": "P0-T16", "name": "Write docs/KNOWN_LIMITATIONS.md", "status": "completed" },
+            { "id": "P0-T17", "name": "Write docs/DECISIONS.md", "status": "completed" },
+            { "id": "P0-T18", "name": "Write docs/API_CONTRACTS.md", "status": "not_started" },
+            { "id": "P0-T19", "name": "Write docs/IMPLEMENTATION_TASKS.json", "status": "in_progress" },
+            { "id": "P0-T20", "name": "Initial git commit and push", "status": "not_started" }
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "P1",
+      "name": "Simulation Proof of Concept",
+      "status": "not_started",
+      "milestones": [
+        {
+          "milestone_id": "M1.1",
+          "name": "Python Environment Setup",
+          "status": "not_started",
+          "tasks": [
+            { "id": "P1-T1-S1", "name": "Create requirements.txt", "status": "not_started" },
+            { "id": "P1-T1-S2", "name": "Create virtual environment", "status": "not_started" },
+            { "id": "P1-T1-S3", "name": "Install packages and verify imports", "status": "not_started" },
+            { "id": "P1-T1-S4", "name": "Verify osmnx can fetch OSM data", "status": "not_started" }
+          ]
+        },
+        {
+          "milestone_id": "M1.2",
+          "name": "Jaipur Road Network Import",
+          "status": "not_started",
+          "tasks": [
+            { "id": "P1-T2-S1", "name": "Define Jaipur bounding box", "status": "not_started" },
+            { "id": "P1-T2-S2", "name": "Fetch drive network via osmnx", "status": "not_started" },
+            { "id": "P1-T2-S3", "name": "Add default speed and lane attributes", "status": "not_started" },
+            { "id": "P1-T2-S4", "name": "Calculate edge capacity", "status": "not_started" },
+            { "id": "P1-T2-S5", "name": "Run connectivity validation", "status": "not_started" },
+            { "id": "P1-T2-S6", "name": "Save network as GraphML + JSON metadata", "status": "not_started" },
+            { "id": "P1-T2-S7", "name": "Record network stats", "status": "not_started" }
+          ]
+        },
+        {
+          "milestone_id": "M1.3",
+          "name": "Graph Traffic Simulator",
+          "status": "not_started",
+          "tasks": [
+            { "id": "P1-T3-S1", "name": "Define SimulationEngine ABC", "status": "not_started" },
+            { "id": "P1-T3-S2", "name": "Implement SyntheticDemandGenerator", "status": "not_started" },
+            { "id": "P1-T3-S3", "name": "Implement Dijkstra routing", "status": "not_started" },
+            { "id": "P1-T3-S4", "name": "Implement BPR travel time function", "status": "not_started" },
+            { "id": "P1-T3-S5", "name": "Implement time-stepped simulation loop", "status": "not_started" },
+            { "id": "P1-T3-S6", "name": "Collect per-vehicle statistics", "status": "not_started" },
+            { "id": "P1-T3-S7", "name": "Compute aggregate metrics", "status": "not_started" },
+            { "id": "P1-T3-S8", "name": "Support road closure and rerouting", "status": "not_started" },
+            { "id": "P1-T3-S9", "name": "Implement reproducible random seed", "status": "not_started" }
+          ]
+        },
+        {
+          "milestone_id": "M1.4",
+          "name": "Metric Persistence",
+          "status": "not_started",
+          "tasks": [
+            { "id": "P1-T4-S1", "name": "Define SQLAlchemy models", "status": "not_started" },
+            { "id": "P1-T4-S2", "name": "Set up Alembic", "status": "not_started" },
+            { "id": "P1-T4-S3", "name": "Write initial migration", "status": "not_started" },
+            { "id": "P1-T4-S4", "name": "Implement RunRepository", "status": "not_started" },
+            { "id": "P1-T4-S5", "name": "Verify run config storage", "status": "not_started" }
+          ]
+        },
+        {
+          "milestone_id": "M1.5",
+          "name": "Scenario Comparison",
+          "status": "not_started",
+          "tasks": [
+            { "id": "P1-T5-S1", "name": "Implement compare_runs()", "status": "not_started" },
+            { "id": "P1-T5-S2", "name": "Compatibility check logic", "status": "not_started" },
+            { "id": "P1-T5-S3", "name": "Calculate metric deltas", "status": "not_started" },
+            { "id": "P1-T5-S4", "name": "Metric-specific improvement logic", "status": "not_started" },
+            { "id": "P1-T5-S5", "name": "Incompatible run warnings", "status": "not_started" }
+          ]
+        },
+        {
+          "milestone_id": "M1.6",
+          "name": "Phase 1 Tests",
+          "status": "not_started",
+          "tasks": [
+            { "id": "P1-T6-S1", "name": "Build 5-node deterministic test network", "status": "not_started" },
+            { "id": "P1-T6-S2", "name": "Test road closure rerouting", "status": "not_started" },
+            { "id": "P1-T6-S3", "name": "Test demand increase effect", "status": "not_started" },
+            { "id": "P1-T6-S4", "name": "Test metric types and units", "status": "not_started" },
+            { "id": "P1-T6-S5", "name": "Test reproducibility with same seed", "status": "not_started" },
+            { "id": "P1-T6-S6", "name": "Test comparison improvement classification", "status": "not_started" }
+          ]
+        }
+      ]
+    },
+    {
+      "phase_id": "P2",
+      "name": "Application Foundation",
+      "status": "not_started",
+      "milestones": [
+        { "milestone_id": "M2.1", "name": "FastAPI project structure", "status": "not_started" },
+        { "milestone_id": "M2.2", "name": "Authentication (JWT)", "status": "not_started" },
+        { "milestone_id": "M2.3", "name": "Celery + Redis job queue", "status": "not_started" },
+        { "milestone_id": "M2.4", "name": "Next.js project setup", "status": "not_started" },
+        { "milestone_id": "M2.5", "name": "City Explorer with real map", "status": "not_started" },
+        { "milestone_id": "M2.6", "name": "Scenario → Submit → Monitor → Results", "status": "not_started" }
+      ]
+    },
+    {
+      "phase_id": "P3",
+      "name": "Scenario and Engine Expansion",
+      "status": "not_started",
+      "milestones": [
+        { "milestone_id": "M3.1", "name": "Road closure scenario", "status": "not_started" },
+        { "milestone_id": "M3.2", "name": "Signal timing scenario", "status": "not_started" },
+        { "milestone_id": "M3.3", "name": "Traffic incident scenario", "status": "not_started" },
+        { "milestone_id": "M3.4", "name": "Live/historical-informed scenarios", "status": "not_started" },
+        { "milestone_id": "M3.5", "name": "SUMO adapter (optional)", "status": "not_started" },
+        { "milestone_id": "M3.6", "name": "Multi-seed reproducibility metadata", "status": "not_started" }
+      ]
+    },
+    {
+      "phase_id": "P4",
+      "name": "Multi-City and Data Ingestion",
+      "status": "not_started",
+      "milestones": [
+        { "milestone_id": "M4.1", "name": "Delhi road network", "status": "not_started" },
+        { "milestone_id": "M4.2", "name": "Network versioning and city metadata API", "status": "not_started" },
+        { "milestone_id": "M4.3", "name": "Historical CSV/JSON import", "status": "not_started" },
+        { "milestone_id": "M4.4", "name": "Data quality reports", "status": "not_started" },
+        { "milestone_id": "M4.5", "name": "Live provider adapter framework", "status": "not_started" }
+      ]
+    },
+    {
+      "phase_id": "P5",
+      "name": "RAG and AI Copilot",
+      "status": "not_started",
+      "milestones": [
+        { "milestone_id": "M5.1", "name": "Document ingestion and indexing", "status": "not_started" },
+        { "milestone_id": "M5.2", "name": "Hybrid retrieval with access filtering", "status": "not_started" },
+        { "milestone_id": "M5.3", "name": "Gemini Function Calling integration", "status": "not_started" },
+        { "milestone_id": "M5.4", "name": "AI workflow implementation", "status": "not_started" },
+        { "milestone_id": "M5.5", "name": "Citation generation and groundedness", "status": "not_started" }
+      ]
+    },
+    {
+      "phase_id": "P6",
+      "name": "Product UI and Experience",
+      "status": "not_started",
+      "milestones": [
+        { "milestone_id": "M6.1", "name": "Landing page", "status": "not_started" },
+        { "milestone_id": "M6.2", "name": "Simulation Monitor", "status": "not_started" },
+        { "milestone_id": "M6.3", "name": "Results and Analytics", "status": "not_started" },
+        { "milestone_id": "M6.4", "name": "Scenario Comparison", "status": "not_started" },
+        { "milestone_id": "M6.5", "name": "AI Copilot chat interface", "status": "not_started" },
+        { "milestone_id": "M6.6", "name": "Data Management page", "status": "not_started" }
+      ]
+    },
+    {
+      "phase_id": "P7",
+      "name": "Hardening and Deployment",
+      "status": "not_started",
+      "milestones": [
+        { "milestone_id": "M7.1", "name": "Complete test suite", "status": "not_started" },
+        { "milestone_id": "M7.2", "name": "Logging and resource controls", "status": "not_started" },
+        { "milestone_id": "M7.3", "name": "Docker Compose configuration", "status": "not_started" },
+        { "milestone_id": "M7.4", "name": "Environment templates and setup docs", "status": "not_started" },
+        { "milestone_id": "M7.5", "name": "Final acceptance test run", "status": "not_started" }
+      ]
+    }
+  ]
+}
