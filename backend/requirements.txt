@@ -1,0 +1,44 @@
+# Urbynex Backend — Python Dependencies
+# Phase 1: Simulation Proof of Concept
+#
+# Versions resolved on: 2026-10-12
+# Python: 3.14.7 (64-bit, MSVC, Windows AMD64)
+# All packages use pre-built binary wheels (--only-binary compatible).
+# numpy 2.2.5 was dropped: no Python 3.14 wheel, source build fails (needs GCC>=8.4).
+# Using numpy 2.5.4 which ships cp314-win_amd64.whl.
+#
+# To install:
+#   python -m venv backend\.venv
+#   backend\.venv\Scripts\pip install -r backend\requirements.txt
+#
+# Do NOT pin transitive dependencies here — they are managed by pip resolution.
+# Update versions deliberately and document the reason in docs/DECISIONS.md.
+
+# ── Road Network Data ──────────────────────────────────────────────────────
+osmnx==2.1.1           # OpenStreetMap road network fetcher (binary wheel available)
+networkx==3.7          # Graph data structure and shortest-path routing
+
+# ── Scientific / Numeric ───────────────────────────────────────────────────
+numpy==2.5.4           # Binary wheel: numpy-2.5.4-cp314-cp314-win_amd64.whl
+                       # (2.2.5 was pinned earlier but has no cp314 wheel)
+shapely==2.2.0         # Geometric operations on road geometry (binary wheel)
+
+# ── Data Handling ──────────────────────────────────────────────────────────
+pandas==3.0.6          # DataFrame for metric output and historical data import
+
+# ── Web API (installed now to validate compatibility) ──────────────────────
+fastapi==0.143.0       # REST API framework
+uvicorn==0.54.0        # ASGI server for FastAPI
+pydantic==2.14.1       # Data validation and settings management
+
+# ── Database ───────────────────────────────────────────────────────────────
+sqlalchemy==2.1.4      # ORM (2.x async-compatible)
+alembic==1.20.0        # Database migrations
+
+# ── Testing ────────────────────────────────────────────────────────────────
+pytest==9.1.1          # Test runner
+pytest-cov==7.1.0      # Coverage reporting
+
+# ── Utilities ─────────────────────────────────────────────────────────────
+python-dotenv==1.2.4   # Load environment variables from .env files
+requests==2.34.2       # HTTP client (provider adapters, health checks)

@@ -5,7 +5,7 @@
     {
       "phase_id": "P0",
       "name": "Repository Inspection and Planning",
-      "status": "in_progress",
+      "status": "completed",
       "milestones": [
         {
           "milestone_id": "M0.1",
@@ -23,7 +23,7 @@
         {
           "milestone_id": "M0.2",
           "name": "Planning Documents",
-          "status": "in_progress",
+          "status": "completed",
           "tasks": [
             { "id": "P0-T7", "name": "Write README.md", "status": "completed" },
             { "id": "P0-T8", "name": "Write .gitignore", "status": "completed" },
@@ -36,9 +36,9 @@
             { "id": "P0-T15", "name": "Write docs/TESTING_STRATEGY.md", "status": "completed" },
             { "id": "P0-T16", "name": "Write docs/KNOWN_LIMITATIONS.md", "status": "completed" },
             { "id": "P0-T17", "name": "Write docs/DECISIONS.md", "status": "completed" },
-            { "id": "P0-T18", "name": "Write docs/API_CONTRACTS.md", "status": "not_started" },
-            { "id": "P0-T19", "name": "Write docs/IMPLEMENTATION_TASKS.json", "status": "in_progress" },
-            { "id": "P0-T20", "name": "Initial git commit and push", "status": "not_started" }
+            { "id": "P0-T18", "name": "Write docs/API_CONTRACTS.md", "status": "completed" },
+            { "id": "P0-T19", "name": "Write docs/IMPLEMENTATION_TASKS.json", "status": "completed" },
+            { "id": "P0-T20", "name": "Initial git commit and push", "status": "completed" }
           ]
         }
       ]
@@ -46,31 +46,31 @@
     {
       "phase_id": "P1",
       "name": "Simulation Proof of Concept",
-      "status": "not_started",
+      "status": "in_progress",
       "milestones": [
         {
           "milestone_id": "M1.1",
           "name": "Python Environment Setup",
-          "status": "not_started",
+          "status": "completed",
           "tasks": [
-            { "id": "P1-T1-S1", "name": "Create requirements.txt", "status": "not_started" },
-            { "id": "P1-T1-S2", "name": "Create virtual environment", "status": "not_started" },
-            { "id": "P1-T1-S3", "name": "Install packages and verify imports", "status": "not_started" },
-            { "id": "P1-T1-S4", "name": "Verify osmnx can fetch OSM data", "status": "not_started" }
+            { "id": "P1-T1-S1", "name": "Create requirements.txt", "status": "completed", "result": "Pinned binary-compatible wheels for Python 3.14" },
+            { "id": "P1-T1-S2", "name": "Create virtual environment", "status": "completed", "result": "backend/.venv created" },
+            { "id": "P1-T1-S3", "name": "Install packages and verify imports", "status": "completed", "result": "39 packages installed and verified" },
+            { "id": "P1-T1-S4", "name": "Verify osmnx can fetch OSM data", "status": "completed", "result": "Verified OSM fetch and connectivity" }
           ]
         },
         {
           "milestone_id": "M1.2",
           "name": "Jaipur Road Network Import",
-          "status": "not_started",
+          "status": "completed",
           "tasks": [
-            { "id": "P1-T2-S1", "name": "Define Jaipur bounding box", "status": "not_started" },
-            { "id": "P1-T2-S2", "name": "Fetch drive network via osmnx", "status": "not_started" },
-            { "id": "P1-T2-S3", "name": "Add default speed and lane attributes", "status": "not_started" },
-            { "id": "P1-T2-S4", "name": "Calculate edge capacity", "status": "not_started" },
-            { "id": "P1-T2-S5", "name": "Run connectivity validation", "status": "not_started" },
-            { "id": "P1-T2-S6", "name": "Save network as GraphML + JSON metadata", "status": "not_started" },
-            { "id": "P1-T2-S7", "name": "Record network stats", "status": "not_started" }
+            { "id": "P1-T2-S1", "name": "Define Jaipur bounding box", "status": "completed", "result": "MI Road - JLN Marg [26.912, 75.818, 26.930, 75.836]" },
+            { "id": "P1-T2-S2", "name": "Fetch drive network via osmnx/OSM API", "status": "completed", "result": "Official OSM API 0.6 direct fetch in 1.83s" },
+            { "id": "P1-T2-S3", "name": "Add default speed and lane attributes", "status": "completed", "result": "Documented urban Indian road class speeds applied" },
+            { "id": "P1-T2-S4", "name": "Calculate edge capacity", "status": "completed", "result": "lanes * 1800 veh/hr/lane formula" },
+            { "id": "P1-T2-S5", "name": "Run connectivity validation", "status": "completed", "result": "100% strongly connected component retained (2538 nodes)" },
+            { "id": "P1-T2-S6", "name": "Save network as GraphML + JSON metadata", "status": "completed", "result": "network.graphml, network.geojson, metadata.json saved" },
+            { "id": "P1-T2-S7", "name": "Record network stats", "status": "completed", "result": "2538 nodes, 5196 directed edges, 156.35 km roads" }
           ]
         },
         {

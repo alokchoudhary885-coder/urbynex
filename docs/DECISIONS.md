@@ -84,3 +84,26 @@ This document records significant technical decisions, the options considered, a
 **Date:** 2026-10-12  
 **Decision:** Commits written as if by a developer (Alok Choudhary), not AI-generated boilerplate  
 **Rationale:** User explicitly requested human-style commits. All commit messages use plain, descriptive English without AI attribution phrases.
+
+---
+
+## D-008: OpenStreetMap Road Network Ingestion Strategy
+
+**Date:** 2026-10-13  
+**Decision:** Fetch road network XML directly from official OSM API (`api.openstreetmap.org/api/0.6/map?bbox=...`) and parse with native `xml.etree.ElementTree` into NetworkX graph.  
+**Options considered:**
+- Option A: Overpass API via OSMnx `graph_from_bbox` → Failed with HTTP 429 / 504 gateway timeouts due to public Overpass server saturation and polygon query buffer overhead.
+- Option B: Official OSM API 0.6 Map Endpoint → **CHOSEN**. Fast (1.83s for 3.5MB XML), reliable, official endpoint with zero third-party mirror dependency.
+
+**Rationale:** Highly resilient, reproducible, requires no external C/C++ tools, and delivers clean bounding box road networks with 100% strongly connected components.
+
+---
+
+## D-009: Python 3.14 Windows AMD64 Binary Dependency Resolution
+
+**Date:** 2026-10-13  
+**Decision:** Pin `numpy==2.5.4`, `shapely==2.2.0`, and `pandas==3.0.6` to pre-built MSVC `win_amd64` binary wheels.  
+**Options considered:**
+- Option A: Legacy `numpy==2.2.5` → Source build failed requiring GCC >= 8.4 on Windows.
+- Option B: `numpy==2.5.4` binary wheel → **CHOSEN**. Installs cleanly without local compilation or MSVC build tools.
+
