@@ -179,3 +179,105 @@ class RunRepository:
         finally:
             if self._external_db is None:
                 db.close()
+
+    def list_cities(self) -> List[Dict[str, Any]]:
+        """Returns distinct cities with network availability details."""
+        db = self._get_session()
+        try:
+            networks = db.query(CityNetworkModel).all()
+            cities_dict: Dict[str, Dict[str, Any]] = {}
+            for net in networks:
+                cid = net.city_id
+                if cid not in cities_dict:
+                    cities_dict[cid] = {
+                        "city_id": cid,
+                        "name": net.city_name,
+                        "country": "India",
+                        "status": "network_ready" if net.simulation_ready else "validating",
+                        "networks_available": 0,
+                        "description": net.corridor,
+                    }
+                cities_dict[cid]["networks_available"] += 1
+            return list(cities_dict.values())
+        finally:
+            if self._external_db is None:
+                db.close()
+
+    def list_networks(self, city_id: Optional[str] = None) -> List[CityNetworkModel]:
+        """Lists registered road networks, optionally filtered by city."""
+        db = self._get_session()
+        try:
+            query = db.query(CityNetworkModel)
+            if city_id:
+                query = query.filter_by(city_id=city_id)
+            return query.all()
+        finally:
+            if self._external_db is None:
+                db.close()
+
+    def get_network(self, network_id: str) -> Optional[CityNetworkModel]:
+        """Gets network record by network_id."""
+        db = self._get_session()
+        try:
+            return db.query(CityNetworkModel).filter_by(network_id=network_id).first()
+        finally:
+            if self._external_db is None:
+                db.close()
+
+    def list_scenarios(self, city_id: Optional[str] = None, limit: int = 50) -> List[ScenarioModel]:
+        """Lists scenarios, optionally filtered by city_id."""
+        db = self._get_session()
+        try:
+            query = db.query(ScenarioModel)
+            if city_id:
+                query = query.filter_by(city_id=city_id)
+            return query.order_by(ScenarioModel.created_at.desc()).limit(limit).all()
+        finally:
+            if self._external_db is None:
+                db.close()
+
+    def create_simulation_job(
+        self,
+        run_id: str,
+        scenario_id: str,
+        engine_id: str,
+        network_id: str,
+        seed: int,
+    ) -> SimulationRunModel:
+        """Creates a pending simulation run record with 'queued' status."""
+        db = self._get_session()
+        try:
+            model = SimulationRunModel(
+                run_id=run_id,
+                scenario_id=scenario_id,
+                engine_id=engine_id,
+                engine_version="1.0.0",
+                network_id=network_id,
+                seed=seed,
+                status="queued",
+                metrics_json={},
+            )
+            db.add(model)
+            db.commit()
+            db.refresh(model)
+            return model
+        finally:
+            if self._external_db is None:
+                db.close()
+
+    def update_run_status(self, run_id: str, status: str, error_message: Optional[str] = None) -> Optional[SimulationRunModel]:
+        """Updates status of a running/failed simulation."""
+        db = self._get_session()
+        try:
+            model = db.query(SimulationRunModel).filter_by(run_id=run_id).first()
+            if model:
+                model.status = status
+                if error_message:
+                    model.warnings_json = (model.warnings_json or []) + [f"Error: {error_message}"]
+                db.commit()
+                db.refresh(model)
+            return model
+        finally:
+            if self._external_db is None:
+                db.close()
+

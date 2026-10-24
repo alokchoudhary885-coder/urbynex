@@ -131,9 +131,21 @@
     {
       "phase_id": "P2",
       "name": "Application Foundation",
-      "status": "not_started",
+      "status": "in_progress",
       "milestones": [
-        { "milestone_id": "M2.1", "name": "FastAPI project structure", "status": "not_started" },
+        {
+          "milestone_id": "M2.1",
+          "name": "FastAPI project structure & REST API integration",
+          "status": "completed",
+          "tasks": [
+            { "id": "P2-T1-S1", "name": "FastAPI project structure, config, CORS, lifespan database sync", "status": "completed", "result": "FastAPI app in backend/api/main.py with lifespan, CORS, error handling" },
+            { "id": "P2-T1-S2", "name": "City and road network endpoints (/api/cities, GeoJSON, edges)", "status": "completed", "result": "GET /api/cities, GET /api/networks/{id}/geojson, edges paging" },
+            { "id": "P2-T1-S3", "name": "Scenario management endpoints (/api/scenarios)", "status": "completed", "result": "POST /api/scenarios with network validation, GET /api/scenarios/{id}" },
+            { "id": "P2-T1-S4", "name": "Simulation execution endpoints (/api/simulations/run, status, metrics)", "status": "completed", "result": "POST /api/simulations/run (sync/async), GET metrics and edge congestion" },
+            { "id": "P2-T1-S5", "name": "Scenario comparison endpoint (/api/compare)", "status": "completed", "result": "POST /api/compare with delta calculations and domain classification" },
+            { "id": "P2-T1-S6", "name": "API integration tests (12 tests covering all routes)", "status": "completed", "result": "12 integration tests in test_api.py; all 30 tests passing" }
+          ]
+        },
         { "milestone_id": "M2.2", "name": "Authentication (JWT)", "status": "not_started" },
         { "milestone_id": "M2.3", "name": "Celery + Redis job queue", "status": "not_started" },
         { "milestone_id": "M2.4", "name": "Next.js project setup", "status": "not_started" },

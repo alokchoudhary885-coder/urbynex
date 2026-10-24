@@ -7,6 +7,7 @@ congestion delay, road closures, and comprehensive metric extraction.
 """
 
 import time
+import uuid
 from typing import Dict, List, Optional, Set
 import networkx as nx
 from .base import (
@@ -355,7 +356,7 @@ class GraphEngine(SimulationEngine):
             warnings.append(f"{routing_failures} trips experienced routing failures due to network disconnects or closures.")
 
         return SimulationResult(
-            run_id=f"run_{int(time.time())}_{config.demand.seed}",
+            run_id=f"run_{int(time.time())}_{config.demand.seed}_{uuid.uuid4().hex[:6]}",
             scenario_config=config,
             engine_id=self.ENGINE_ID,
             engine_version=self.ENGINE_VERSION,

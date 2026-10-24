@@ -38,6 +38,7 @@ alembic==1.20.0        # Database migrations
 # ── Testing ────────────────────────────────────────────────────────────────
 pytest==9.1.1          # Test runner
 pytest-cov==7.1.0      # Coverage reporting
+httpx==0.28.1          # HTTP test client for FastAPI / Starlette
 
 # ── Utilities ─────────────────────────────────────────────────────────────
 python-dotenv==1.2.4   # Load environment variables from .env files
