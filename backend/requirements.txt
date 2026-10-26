@@ -44,3 +44,8 @@ httpx==0.28.1          # HTTP test client for FastAPI / Starlette
 # ── Utilities ─────────────────────────────────────────────────────────────
 python-dotenv==1.2.4   # Load environment variables from .env files
 requests==2.34.2       # HTTP client (provider adapters, health checks)
+
+# -- Job Queue --
+celery==5.4.0          # Distributed task queue for background simulation runs
+redis==5.2.1           # Redis client (broker + result backend for Celery)
+

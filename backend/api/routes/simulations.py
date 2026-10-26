@@ -2,7 +2,11 @@
 backend/api/routes/simulations.py
 
 Endpoints for triggering simulation runs, polling status, and fetching metric results.
-Supports both synchronous runs and background execution.
+
+Dispatch strategy:
+  - run_async=True  AND Redis available  → Celery task (real async job queue)
+  - run_async=True  AND Redis unavailable → FastAPI BackgroundTask (in-process fallback)
+  - run_async=False                       → Synchronous in-request execution
 """
 
 import time
@@ -30,6 +34,47 @@ def get_simulation_service(
     return SimulationService(repo=repo, engine=engine)
 
 
+def _dispatch_async(
+    run_id: str,
+    scenario_id: str,
+    seed_override: Optional[int],
+    repo: RunRepository,
+    service: SimulationService,
+    background_tasks: BackgroundTasks,
+) -> None:
+    """
+    Chooses between Celery and FastAPI BackgroundTasks for async execution.
+    Celery is preferred when Redis is reachable; otherwise falls back gracefully.
+    """
+    try:
+        from ...worker.celery_app import is_redis_available
+        from ...worker.tasks import run_simulation_task
+
+        if is_redis_available():
+            # Real async job queue: task is picked up by a separate Celery worker process
+            run_simulation_task.apply_async(
+                kwargs={
+                    "run_id": run_id,
+                    "scenario_id": scenario_id,
+                    "seed_override": seed_override,
+                },
+                task_id=run_id,  # use run_id as Celery task_id for traceability
+                queue="simulations",
+            )
+            return
+    except Exception:
+        # Celery/Redis import or connection failed — fall through to BackgroundTasks
+        pass
+
+    # In-process fallback (no Redis required)
+    background_tasks.add_task(
+        service.execute_background_job,
+        run_id=run_id,
+        scenario_id=scenario_id,
+        seed_override=seed_override,
+    )
+
+
 @router.post("/simulations/run", response_model=SimulationRunStatusResponse)
 @router.post("/runs", response_model=SimulationRunStatusResponse, include_in_schema=False)
 def run_simulation(
@@ -40,7 +85,10 @@ def run_simulation(
 ) -> SimulationRunStatusResponse:
     """
     Submits a simulation run for execution.
-    Executes the real GraphEngine (Engine A) and records metrics in SQLite.
+
+    - Synchronous (run_async=false): runs in the request, returns full metrics.
+    - Asynchronous (run_async=true): enqueues to Celery (if Redis available)
+      or FastAPI BackgroundTasks, returns a 'queued' status immediately.
     """
     scenario = repo.get_scenario(req.scenario_id)
     if not scenario:
@@ -53,7 +101,7 @@ def run_simulation(
     seed = req.seed_override if req.seed_override is not None else (scenario.demand_json or {}).get("seed", 42)
 
     if req.run_async:
-        # Enqueue background execution (FastAPI background task, modular for Celery in M2.3)
+        # Create a queued job record first so it is immediately visible via GET
         repo.create_simulation_job(
             run_id=run_id,
             scenario_id=req.scenario_id,
@@ -61,11 +109,13 @@ def run_simulation(
             network_id=scenario.network_id,
             seed=seed,
         )
-        background_tasks.add_task(
-            service.execute_background_job,
+        _dispatch_async(
             run_id=run_id,
             scenario_id=req.scenario_id,
             seed_override=req.seed_override,
+            repo=repo,
+            service=service,
+            background_tasks=background_tasks,
         )
         return SimulationRunStatusResponse(
             run_id=run_id,

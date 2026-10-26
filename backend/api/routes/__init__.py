@@ -5,6 +5,7 @@ from .cities import router as cities_router
 from .scenarios import router as scenarios_router
 from .simulations import router as simulations_router
 from .comparison import router as comparison_router
+from .worker import router as worker_router
 
 __all__ = [
     "auth_router",
@@ -13,4 +14,5 @@ __all__ = [
     "scenarios_router",
     "simulations_router",
     "comparison_router",
+    "worker_router",
 ]
