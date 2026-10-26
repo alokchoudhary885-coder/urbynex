@@ -30,6 +30,7 @@ pandas==3.0.6          # DataFrame for metric output and historical data import
 fastapi==0.143.0       # REST API framework
 uvicorn==0.54.0        # ASGI server for FastAPI
 pydantic==2.14.1       # Data validation and settings management
+pyjwt==2.15.1          # JWT token creation and decoding (RFC 7519)
 
 # ── Database ───────────────────────────────────────────────────────────────
 sqlalchemy==2.1.4      # ORM (2.x async-compatible)

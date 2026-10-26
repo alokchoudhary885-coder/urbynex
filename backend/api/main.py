@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 
 from .config import settings
 from .routes import (
+    auth_router,
     health_router,
     cities_router,
     scenarios_router,
@@ -156,6 +157,7 @@ def get_root():
 
 # Mount Routers under both /api and /api/v1 for uniform access
 for prefix in ["/api", "/api/v1"]:
+    app.include_router(auth_router, prefix=prefix)
     app.include_router(health_router, prefix=prefix)
     app.include_router(cities_router, prefix=prefix)
     app.include_router(scenarios_router, prefix=prefix)

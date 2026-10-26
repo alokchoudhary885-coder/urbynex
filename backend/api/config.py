@@ -36,6 +36,14 @@ class Settings(BaseModel):
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'urbynex.db'}")
 
+    # JWT Authentication
+    JWT_SECRET: str = os.getenv(
+        "URBYNEX_JWT_SECRET",
+        "urbynex-dev-secret-change-in-production-must-be-32-bytes-minimum",
+    )
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRY_HOURS: int = int(os.getenv("URBYNEX_JWT_EXPIRY_HOURS", "1"))
+
     # Simulation defaults
     DEFAULT_ENGINE: str = "graph_engine_v1"
     MAX_VEHICLE_COUNT: int = 10000

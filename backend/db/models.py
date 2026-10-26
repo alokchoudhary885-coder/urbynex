@@ -20,6 +20,22 @@ from sqlalchemy.orm import relationship
 from .session import Base
 
 
+class UserModel(Base):
+    """Registered platform user for scenario authoring and audit trails."""
+    __tablename__ = "users"
+
+    user_id = Column(String(64), primary_key=True)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    name = Column(String(128), nullable=False)
+    role = Column(String(32), default="planner")  # admin, planner, viewer
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    scenarios = relationship("ScenarioModel", back_populates="author")
+    runs = relationship("SimulationRunModel", back_populates="user")
+
+
 class CityNetworkModel(Base):
     """Registered road networks and validation states."""
     __tablename__ = "city_networks"
@@ -51,12 +67,14 @@ class ScenarioModel(Base):
     city_id = Column(String(64), nullable=False, index=True)
     network_id = Column(String(64), ForeignKey("city_networks.network_id"), nullable=False)
     scenario_type = Column(String(32), default="baseline", index=True)
+    user_id = Column(String(64), ForeignKey("users.user_id"), nullable=True, index=True)
     demand_json = Column(JSON, nullable=False)
     interventions_json = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     network = relationship("CityNetworkModel", back_populates="scenarios")
+    author = relationship("UserModel", back_populates="scenarios")
     runs = relationship("SimulationRunModel", back_populates="scenario", cascade="all, delete-orphan")
 
 
@@ -69,6 +87,7 @@ class SimulationRunModel(Base):
     engine_id = Column(String(64), nullable=False)
     engine_version = Column(String(32), default="1.0.0")
     network_id = Column(String(64), nullable=False, index=True)
+    user_id = Column(String(64), ForeignKey("users.user_id"), nullable=True, index=True)
     seed = Column(Integer, nullable=False)
     status = Column(String(32), default="completed", index=True)  # queued, running, completed, failed, cancelled
 
@@ -93,3 +112,4 @@ class SimulationRunModel(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     scenario = relationship("ScenarioModel", back_populates="runs")
+    user = relationship("UserModel", back_populates="runs")
