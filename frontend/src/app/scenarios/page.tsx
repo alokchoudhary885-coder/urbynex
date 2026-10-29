@@ -1,22 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useScenarios } from "@/lib/hooks/useApi";
 import { api, ApiClientError } from "@/lib/api/client";
 import type { CreateScenarioRequest, ScenarioType } from "@/lib/api/types";
 
 const SCENARIO_TYPES: { value: ScenarioType; label: string; desc: string }[] = [
-  { value: "baseline", label: "Baseline", desc: "Normal traffic flow — no interventions." },
-  { value: "demand_change", label: "Demand Change", desc: "Simulate higher or lower vehicle volumes." },
-  { value: "road_closure", label: "Road Closure", desc: "Close specific road segments." },
-  { value: "incident", label: "Incident", desc: "Capacity or speed reduction on segments." },
+  { value: "baseline", label: "Baseline Network", desc: "Standard traffic flow under normal capacity." },
+  { value: "demand_change", label: "Demand Fluctuation", desc: "Model peak surge or reduced city traffic demand." },
+  { value: "road_closure", label: "Road Closure Intervention", desc: "Completely close targeted road segments and evaluate rerouting." },
+  { value: "incident", label: "Traffic Incident / Bottleneck", desc: "Simulate lane obstructions, speed drops, or roadwork." },
 ];
 
-export default function ScenariosPage() {
+function ScenariosContent() {
+  const searchParams = useSearchParams();
   const { data, loading, error, refetch } = useScenarios();
+
   const [creating, setCreating] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+
+  const [closuresInput, setClosuresInput] = useState<string>("");
+  const [closureReason, setClosureReason] = useState<string>("Planned Corridor Maintenance");
+  const [incidentEdgesInput, setIncidentEdgesInput] = useState<string>("");
+  const [capacityReduction, setCapacityReduction] = useState<number>(0.5);
+  const [speedReduction, setSpeedReduction] = useState<number>(0.5);
 
   const [form, setForm] = useState<CreateScenarioRequest>({
     name: "",
@@ -27,18 +37,79 @@ export default function ScenariosPage() {
     demand: { vehicle_count: 200, duration_seconds: 3600, seed: 42 },
   });
 
+  // Pre-fill from URL parameters (e.g., coming from the Map Explorer)
+  useEffect(() => {
+    const netId = searchParams.get("network_id");
+    const cityId = searchParams.get("city_id");
+    const closures = searchParams.get("closures");
+
+    if (netId || cityId || closures) {
+      setForm((prev) => ({
+        ...prev,
+        network_id: netId || prev.network_id,
+        city_id: cityId || prev.city_id,
+        scenario_type: closures ? "road_closure" : prev.scenario_type,
+        name: closures ? `Intervention on ${closures.split(",").length} Segment(s)` : prev.name,
+      }));
+
+      if (closures) {
+        setClosuresInput(closures.split(",").join("\n"));
+      }
+    }
+  }, [searchParams]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
     setSubmitError(null);
     setSubmitSuccess(null);
+
     try {
-      const scenario = await api.createScenario(form);
-      setSubmitSuccess(`Created scenario: ${scenario.scenario_id}`);
+      const payload: CreateScenarioRequest = {
+        ...form,
+      };
+
+      // Add closures intervention if road_closure type
+      if (form.scenario_type === "road_closure") {
+        const edgeIds = closuresInput
+          .split(/[\n,]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (edgeIds.length === 0) {
+          throw new Error("Please specify at least one edge ID to close for a road closure scenario.");
+        }
+        payload.closures = {
+          edge_ids: edgeIds,
+          description: closureReason,
+        };
+      }
+
+      // Add incident intervention if incident type
+      if (form.scenario_type === "incident") {
+        const edgeIds = incidentEdgesInput
+          .split(/[\n,]/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (edgeIds.length === 0) {
+          throw new Error("Please specify at least one edge ID affected by the incident.");
+        }
+        payload.incidents = {
+          edge_ids: edgeIds,
+          capacity_reduction_factor: capacityReduction,
+          speed_reduction_factor: speedReduction,
+        };
+      }
+
+      const scenario = await api.createScenario(payload);
+      setSubmitSuccess(`Created scenario: ${scenario.name} (${scenario.scenario_id})`);
       refetch();
-    } catch (err) {
+    } catch (err: unknown) {
       setSubmitError(
-        err instanceof ApiClientError ? err.body.message : String(err),
+        err instanceof ApiClientError
+          ? err.body.message
+          : err instanceof Error
+            ? err.message
+            : String(err)
       );
     } finally {
       setCreating(false);
@@ -46,150 +117,265 @@ export default function ScenariosPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 grid lg:grid-cols-5 gap-8">
-      {/* Create Scenario Form */}
-      <div className="lg:col-span-2 space-y-4">
-        <h2 className="text-xl font-bold text-white">New Scenario</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block">
-            <span className="text-xs text-gray-400 uppercase tracking-wider">Name *</span>
-            <input
-              required
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="mt-1 block w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
-              placeholder="Morning Peak Baseline"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-xs text-gray-400 uppercase tracking-wider">Type *</span>
-            <select
-              value={form.scenario_type}
-              onChange={(e) =>
-                setForm({ ...form, scenario_type: e.target.value as ScenarioType })
-              }
-              className="mt-1 block w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
-            >
-              {SCENARIO_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-            <p className="text-xs text-gray-500 mt-1">
-              {SCENARIO_TYPES.find((t) => t.value === form.scenario_type)?.desc}
-            </p>
-          </label>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-xs text-gray-400 uppercase tracking-wider">Vehicles</span>
-              <input
-                type="number"
-                min={1}
-                max={10000}
-                value={form.demand.vehicle_count}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    demand: { ...form.demand, vehicle_count: +e.target.value },
-                  })
-                }
-                className="mt-1 block w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs text-gray-400 uppercase tracking-wider">Duration (s)</span>
-              <input
-                type="number"
-                min={60}
-                max={86400}
-                value={form.demand.duration_seconds}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    demand: { ...form.demand, duration_seconds: +e.target.value },
-                  })
-                }
-                className="mt-1 block w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
-              />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="text-xs text-gray-400 uppercase tracking-wider">Seed (reproducibility)</span>
-            <input
-              type="number"
-              value={form.demand.seed}
-              onChange={(e) =>
-                setForm({ ...form, demand: { ...form.demand, seed: +e.target.value } })
-              }
-              className="mt-1 block w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-600"
-            />
-          </label>
-
-          {submitError && (
-            <div className="bg-red-950 border border-red-800 text-red-300 rounded-lg px-3 py-2 text-sm">
-              {submitError}
-            </div>
-          )}
-          {submitSuccess && (
-            <div className="bg-emerald-950 border border-emerald-800 text-emerald-300 rounded-lg px-3 py-2 text-sm">
-              {submitSuccess}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={creating}
-            className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors text-sm"
-          >
-            {creating ? "Creating…" : "Create Scenario"}
-          </button>
-        </form>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+      <div>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight">Scenario Engineering</h1>
+        <p className="text-gray-400 text-sm mt-1">
+          Define reproducible traffic simulations, modify vehicle demand volume, or apply real network interventions such as road closures and incident bottlenecks.
+        </p>
       </div>
 
-      {/* Scenario List */}
-      <div className="lg:col-span-3 space-y-4">
-        <h2 className="text-xl font-bold text-white">
-          Saved Scenarios{" "}
-          <span className="text-gray-500 text-base font-normal">
-            ({data?.total ?? 0})
-          </span>
-        </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Scenario Config Form */}
+        <div className="lg:col-span-5 bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+          <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              Configure New Scenario
+            </h2>
+            <span className="text-xs font-mono text-gray-500">Jaipur v1</span>
+          </div>
 
-        {loading && (
-          <div className="text-gray-500 text-sm">Loading…</div>
-        )}
-        {error && (
-          <div className="text-red-400 text-sm">Error: {error}</div>
-        )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block">
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Scenario Title *</span>
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                className="mt-1 block w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+                placeholder="e.g. MI Road Peak Closure Test"
+              />
+            </label>
 
-        {data?.scenarios.map((s) => (
-          <ScenarioCard key={s.scenario_id} scenario={s} />
-        ))}
-        {data?.total === 0 && !loading && (
-          <p className="text-gray-600 text-sm">No scenarios yet. Create one on the left.</p>
-        )}
+            <label className="block">
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Intervention Strategy *</span>
+              <select
+                value={form.scenario_type}
+                onChange={(e) =>
+                  setForm({ ...form, scenario_type: e.target.value as ScenarioType })
+                }
+                className="mt-1 block w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+              >
+                {SCENARIO_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+                {SCENARIO_TYPES.find((t) => t.value === form.scenario_type)?.desc}
+              </p>
+            </label>
+
+            {/* Road Closure Configuration Box */}
+            {form.scenario_type === "road_closure" && (
+              <div className="bg-red-950/30 border border-red-900/60 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-red-300">Target Road Segments (Closed)</span>
+                  <Link href="/cities" className="text-[11px] text-emerald-400 hover:underline">
+                    Pick on Map →
+                  </Link>
+                </div>
+                <textarea
+                  rows={3}
+                  value={closuresInput}
+                  onChange={(e) => setClosuresInput(e.target.value)}
+                  placeholder="Paste edge IDs (one per line or comma-separated) e.g. 316420519_8637161036_0"
+                  className="w-full bg-gray-950 border border-red-900/60 rounded-lg p-2.5 text-xs text-red-200 font-mono focus:outline-none focus:border-red-500"
+                />
+                <input
+                  type="text"
+                  value={closureReason}
+                  onChange={(e) => setClosureReason(e.target.value)}
+                  placeholder="Closure justification / reason"
+                  className="w-full bg-gray-950 border border-red-900/60 rounded-lg px-3 py-1.5 text-xs text-gray-300 focus:outline-none"
+                />
+              </div>
+            )}
+
+            {/* Incident Configuration Box */}
+            {form.scenario_type === "incident" && (
+              <div className="bg-amber-950/30 border border-amber-900/60 rounded-xl p-4 space-y-3">
+                <span className="text-xs font-semibold text-amber-300 block">Incident Degradation Parameters</span>
+                <textarea
+                  rows={2}
+                  value={incidentEdgesInput}
+                  onChange={(e) => setIncidentEdgesInput(e.target.value)}
+                  placeholder="Affected edge IDs (e.g. 316420519_8637161036_0)"
+                  className="w-full bg-gray-950 border border-amber-900/60 rounded-lg p-2.5 text-xs text-amber-200 font-mono focus:outline-none focus:border-amber-500"
+                />
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <label>
+                    <span className="text-gray-400 block mb-1">Capacity Factor ({Math.round(capacityReduction * 100)}%)</span>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={1.0}
+                      step={0.05}
+                      value={capacityReduction}
+                      onChange={(e) => setCapacityReduction(+e.target.value)}
+                      className="w-full accent-amber-500"
+                    />
+                  </label>
+                  <label>
+                    <span className="text-gray-400 block mb-1">Speed Factor ({Math.round(speedReduction * 100)}%)</span>
+                    <input
+                      type="range"
+                      min={0.1}
+                      max={1.0}
+                      step={0.05}
+                      value={speedReduction}
+                      onChange={(e) => setSpeedReduction(+e.target.value)}
+                      className="w-full accent-amber-500"
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {/* Demand Settings */}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Vehicle Trips</span>
+                <input
+                  type="number"
+                  min={10}
+                  max={10000}
+                  value={form.demand.vehicle_count}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      demand: { ...form.demand, vehicle_count: +e.target.value },
+                    })
+                  }
+                  className="mt-1 block w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Duration (sec)</span>
+                <input
+                  type="number"
+                  min={300}
+                  max={86400}
+                  step={300}
+                  value={form.demand.duration_seconds}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      demand: { ...form.demand, duration_seconds: +e.target.value },
+                    })
+                  }
+                  className="mt-1 block w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                />
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">RNG Seed (Deterministic Simulation)</span>
+              <input
+                type="number"
+                value={form.demand.seed}
+                onChange={(e) =>
+                  setForm({ ...form, demand: { ...form.demand, seed: +e.target.value } })
+                }
+                className="mt-1 block w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+              />
+            </label>
+
+            {submitError && (
+              <div className="bg-red-950 border border-red-800 text-red-300 rounded-xl p-3 text-xs leading-relaxed">
+                {submitError}
+              </div>
+            )}
+            {submitSuccess && (
+              <div className="bg-emerald-950 border border-emerald-800 text-emerald-300 rounded-xl p-3 text-xs">
+                {submitSuccess}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={creating}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-all text-sm shadow-lg shadow-emerald-950"
+            >
+              {creating ? "Persisting Scenario…" : "Save Scenario Definition"}
+            </button>
+          </form>
+        </div>
+
+        {/* Existing Scenarios List & Run Runner */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <span>Saved Scenarios</span>
+              <span className="px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 text-xs font-mono">
+                {data?.total ?? 0}
+              </span>
+            </h2>
+            <button
+              onClick={() => refetch()}
+              className="text-xs text-gray-400 hover:text-emerald-400 transition-colors"
+            >
+              ↻ Refresh
+            </button>
+          </div>
+
+          {loading && (
+            <div className="flex items-center justify-center p-12 text-gray-500 text-xs">
+              Loading scenarios from database...
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-950/60 border border-red-800 text-red-300 p-4 rounded-xl text-xs">
+              Error fetching scenarios: {error}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {data?.scenarios.map((s) => (
+              <ScenarioCard key={s.scenario_id} scenario={s} />
+            ))}
+
+            {data?.total === 0 && !loading && (
+              <div className="bg-gray-900 border border-dashed border-gray-800 rounded-2xl p-8 text-center text-gray-500 text-sm">
+                No scenarios registered yet. Configure your first baseline or intervention scenario on the left.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-function ScenarioCard({ scenario }: { scenario: { scenario_id: string; name: string; scenario_type: string; demand: { vehicle_count: number; duration_seconds: number; seed?: number }; created_at: string } }) {
+function ScenarioCard({
+  scenario,
+}: {
+  scenario: {
+    scenario_id: string;
+    name: string;
+    scenario_type: string;
+    network_id: string;
+    demand: { vehicle_count: number; duration_seconds: number; seed?: number };
+    created_at: string;
+  };
+}) {
   const [running, setRunning] = useState(false);
-  const [runId, setRunId] = useState<string | null>(null);
+  const [runResult, setRunResult] = useState<{ run_id: string; status: string } | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+  const [runAsync, setRunAsync] = useState(false);
 
   async function handleRun() {
     setRunning(true);
     setRunError(null);
+    setRunResult(null);
     try {
       const result = await api.runSimulation({
         scenario_id: scenario.scenario_id,
-        run_async: false,
+        run_async: runAsync,
       });
-      setRunId(result.run_id);
-    } catch (err) {
+      setRunResult({ run_id: result.run_id, status: result.status });
+    } catch (err: unknown) {
       setRunError(err instanceof ApiClientError ? err.body.message : String(err));
     } finally {
       setRunning(false);
@@ -197,39 +383,107 @@ function ScenarioCard({ scenario }: { scenario: { scenario_id: string; name: str
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-      <div className="flex items-start justify-between gap-4 mb-2">
+    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 hover:border-gray-700 transition-colors space-y-4">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-semibold text-white">{scenario.name}</h3>
-          <p className="text-xs text-gray-500 font-mono mt-0.5">{scenario.scenario_id}</p>
+          <h3 className="font-bold text-white text-base">{scenario.name}</h3>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="font-mono text-[11px] text-gray-500">{scenario.scenario_id}</span>
+            <span className="text-gray-700">·</span>
+            <span className="font-mono text-[11px] text-emerald-400">{scenario.network_id}</span>
+          </div>
         </div>
-        <span className="px-2 py-0.5 rounded bg-gray-800 text-gray-400 text-xs">
+        <span className="px-2.5 py-1 rounded-full bg-gray-800 text-gray-300 text-xs font-mono uppercase">
           {scenario.scenario_type}
         </span>
       </div>
-      <div className="text-xs text-gray-500 mb-4 space-y-0.5">
-        <p>{scenario.demand.vehicle_count} vehicles · {scenario.demand.duration_seconds}s · seed={scenario.demand.seed ?? 42}</p>
-        <p>Created: {new Date(scenario.created_at).toLocaleString()}</p>
+
+      <div className="grid grid-cols-3 gap-2 bg-gray-950/60 p-3 rounded-xl border border-gray-800/80 text-xs">
+        <div>
+          <span className="text-[10px] text-gray-500 uppercase block">Vehicles</span>
+          <span className="font-mono font-semibold text-gray-200">
+            {scenario.demand.vehicle_count.toLocaleString()}
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-gray-500 uppercase block">Duration</span>
+          <span className="font-mono font-semibold text-gray-200">
+            {scenario.demand.duration_seconds}s
+          </span>
+        </div>
+        <div>
+          <span className="text-[10px] text-gray-500 uppercase block">Seed</span>
+          <span className="font-mono font-semibold text-gray-200">
+            {scenario.demand.seed ?? 42}
+          </span>
+        </div>
       </div>
 
-      {runId && (
-        <div className="mb-3 bg-emerald-950 border border-emerald-800 text-emerald-300 rounded-lg px-3 py-2 text-xs font-mono">
-          ✓ run_id: {runId}
+      {runResult && (
+        <div className="bg-emerald-950/70 border border-emerald-800/80 rounded-xl p-3.5 space-y-2 text-xs">
+          <div className="flex items-center justify-between text-emerald-300">
+            <span>✓ Simulation {runResult.status}:</span>
+            <span className="font-mono font-bold text-emerald-200">{runResult.run_id}</span>
+          </div>
+          <div className="flex items-center gap-3 pt-1 border-t border-emerald-900/60 text-[11px]">
+            <Link
+              href={`/simulations`}
+              className="text-emerald-400 underline font-semibold hover:text-emerald-300"
+            >
+              Inspect Metrics →
+            </Link>
+            <Link
+              href={`/compare`}
+              className="text-emerald-400 underline font-semibold hover:text-emerald-300"
+            >
+              Compare with Baseline →
+            </Link>
+          </div>
         </div>
       )}
+
       {runError && (
-        <div className="mb-3 bg-red-950 border border-red-800 text-red-300 rounded-lg px-3 py-2 text-xs">
+        <div className="bg-red-950 border border-red-800 text-red-300 rounded-xl p-3 text-xs">
           {runError}
         </div>
       )}
 
-      <button
-        onClick={handleRun}
-        disabled={running}
-        className="px-4 py-2 text-xs bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-lg transition-colors"
-      >
-        {running ? "Running…" : "▶ Run Simulation"}
-      </button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={runAsync}
+            onChange={(e) => setRunAsync(e.target.checked)}
+            className="rounded bg-gray-800 border-gray-700 text-emerald-500 focus:ring-0"
+          />
+          <span>Background Execution (Celery/Async queue)</span>
+        </label>
+
+        <button
+          onClick={handleRun}
+          disabled={running}
+          className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-all shadow-md shadow-emerald-950 flex items-center justify-center gap-2"
+        >
+          {running ? (
+            <>
+              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <span>Simulating...</span>
+            </>
+          ) : (
+            <>
+              <span>▶ Execute Engine A</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
+  );
+}
+
+export default function ScenariosPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-500 text-sm">Loading Scenario Engineering Studio...</div>}>
+      <ScenariosContent />
+    </Suspense>
   );
 }
