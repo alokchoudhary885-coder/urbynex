@@ -6,8 +6,8 @@
 |---|---|---|
 | 0 | Repository Inspection and Planning | ✅ Completed |
 | 1 | Simulation Proof of Concept | ✅ Completed |
-| 2 | Application Foundation | ⏳ In Progress (M2.1 Complete) |
-| 3 | Scenario and Engine Expansion | 🔲 Not Started |
+| 2 | Application Foundation | ✅ Completed |
+| 3 | Scenario and Engine Expansion | ⏳ In Progress (Starting M3.1) |
 | 4 | Multi-City and Data Ingestion | 🔲 Not Started |
 | 5 | RAG and AI Copilot | 🔲 Not Started |
 | 6 | Product UI and Experience | 🔲 Not Started |
@@ -206,12 +206,12 @@ Subtasks:
 **Goal:** FastAPI backend + Next.js frontend connected to real simulation data.
 
 ### Key Milestones
-- M2.1: FastAPI project structure, routes, Pydantic schemas
-- M2.2: Authentication (JWT, user registration/login)
-- M2.3: Celery + Redis job queue for simulation runs
-- M2.4: Next.js project setup, API client, basic pages
-- M2.5: City Explorer page with real map (MapLibre + OSM tiles)
-- M2.6: Scenario Builder → submit → monitor → view results
+- [x] M2.1: FastAPI project structure, routes, Pydantic schemas (commit `ee3b0dd`)
+- [x] M2.2: Authentication (JWT, user registration/login, UserModel) (commit `287f02a`)
+- [x] M2.3: Celery + Redis job queue with graceful fallback (commit `8eb15b8`)
+- [x] M2.4: Next.js project setup, API client, basic pages (commit `ebc36b1`)
+- [x] M2.5: City Explorer page with real map (MapLibre + OSM tiles + GeoJSON layer) (commit `8b8e44f`)
+- [x] M2.6: Scenario Builder → submit → monitor → view results (commit `39d504b`)
 
 ---
 
