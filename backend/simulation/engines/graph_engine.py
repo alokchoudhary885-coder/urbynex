@@ -24,6 +24,7 @@ from .base import (
     VehicleTripRecord,
 )
 from .bpr import BPRLinkPerformance
+from .webster import WebsterSignalDelay
 from ..network_loader import NetworkLoader
 
 
@@ -36,9 +37,15 @@ class GraphEngine(SimulationEngine):
     ENGINE_ID = "graph_engine_v1"
     ENGINE_VERSION = "1.0.0"
 
-    def __init__(self, network_loader: Optional[NetworkLoader] = None, bpr: Optional[BPRLinkPerformance] = None):
+    def __init__(
+        self,
+        network_loader: Optional[NetworkLoader] = None,
+        bpr: Optional[BPRLinkPerformance] = None,
+        webster: Optional[WebsterSignalDelay] = None,
+    ):
         self.network_loader = network_loader or NetworkLoader()
         self.bpr = bpr or BPRLinkPerformance(alpha=0.15, beta=4.0)
+        self.webster = webster or WebsterSignalDelay()
 
     @property
     def engine_id(self) -> str:
@@ -53,11 +60,12 @@ class GraphEngine(SimulationEngine):
                 ScenarioType.DEMAND_CHANGE,
                 ScenarioType.ROAD_CLOSURE,
                 ScenarioType.INCIDENT,
+                ScenarioType.SIGNAL_TIMING,
             ],
             supports_lane_changing=False,
-            supports_signal_timing=False,
+            supports_signal_timing=True,
             supports_queue_spillback=False,
-            description="Pure Python graph simulator utilizing dynamic shortest paths and BPR congestion delay modeling.",
+            description="Pure Python graph simulator utilizing dynamic shortest paths, BPR congestion delay, and Webster intersection signal control timing.",
         )
 
     def validate_scenario(self, config: ScenarioConfig) -> ValidationResult:
@@ -79,6 +87,17 @@ class GraphEngine(SimulationEngine):
             for cid in config.closures.edge_ids:
                 if cid not in all_edge_ids:
                     warnings.append(f"Closure edge ID '{cid}' not found in network {config.network_id}.")
+
+        # Validate signal timing if configured
+        if config.signals:
+            if config.signals.cycle_time_s < 30.0 or config.signals.cycle_time_s > 240.0:
+                errors.append("Signal cycle time must be between 30 and 240 seconds.")
+            if config.signals.green_split_ratio < 0.1 or config.signals.green_split_ratio > 0.9:
+                errors.append("Signal green split ratio must be between 0.1 and 0.9.")
+            target_node = str(config.signals.intersection_node_id)
+            node_ids_str = {str(n) for n in G.nodes}
+            if target_node not in node_ids_str:
+                warnings.append(f"Signal intersection node '{target_node}' not found in network {config.network_id}.")
 
         # Check vehicle count
         if config.demand.vehicle_count <= 0:
@@ -127,6 +146,23 @@ class GraphEngine(SimulationEngine):
                     # Recompute free-flow time under degraded speed
                     speed_ms = data["speed_kmh"] / 3.6
                     data["free_flow_time_s"] = round(data["length"] / speed_ms, 2)
+                    data["is_incident_edge"] = True
+
+        # 3. Signal timing interventions (Webster intersection control delay)
+        if config.signals:
+            target_node = str(config.signals.intersection_node_id)
+            cycle = float(config.signals.cycle_time_s)
+            split = float(config.signals.green_split_ratio)
+
+            for u, v, data in sim_G.edges(data=True):
+                # An approach edge is one whose destination (v) is the signalized intersection
+                if str(v) == target_node:
+                    base_cap = data.get("capacity_veh_hr", 1800.0)
+                    data["base_capacity_veh_hr"] = base_cap
+                    data["capacity_veh_hr"] = self.webster.calculate_effective_capacity(base_cap, split)
+                    data["signal_cycle_s"] = cycle
+                    data["signal_split"] = split
+                    data["is_signal_approach"] = True
 
         return sim_G, closed_edges
 
@@ -194,6 +230,27 @@ class GraphEngine(SimulationEngine):
                     ff_time = edata.get("free_flow_time_s", 10.0)
 
                     actual_edge_time = self.bpr.calculate_travel_time(ff_time, hourly_vol, cap)
+
+                    # Webster signal control delay if approach to signalized intersection
+                    if edata.get("is_signal_approach"):
+                        cycle = edata.get("signal_cycle_s", 90.0)
+                        split = edata.get("signal_split", 0.5)
+                        base_c = edata.get("base_capacity_veh_hr", 1800.0)
+                        sig_delay, _, _ = self.webster.calculate_control_delay(
+                            cycle_time_s=cycle,
+                            green_split_ratio=split,
+                            hourly_volume=hourly_vol,
+                            base_capacity_veh_hr=base_c,
+                            analysis_period_hours=duration_hours,
+                        )
+                        actual_edge_time += sig_delay
+
+                    # Incident physical queuing delay under oversaturated bottlenecks
+                    if edata.get("is_incident_edge") and hourly_vol > cap:
+                        oversat_ratio = (hourly_vol - cap) / max(1.0, cap)
+                        queue_delay = round(min(1800.0, oversat_ratio * ff_time * 4.0), 2)
+                        actual_edge_time += queue_delay
+
                     trip_distance += edata.get("length", 0.0)
                     trip_travel_time += actual_edge_time
                     trip_free_flow_time += ff_time
@@ -257,6 +314,24 @@ class GraphEngine(SimulationEngine):
                 hourly_vol = vol / duration_hours
                 actual_time, delay, eff_spd, vc_ratio = self.bpr.calculate_metrics(length_m, ff_time, hourly_vol, cap)
 
+                # Add signal control delay if approach edge
+                if d.get("is_signal_approach"):
+                    cycle = d.get("signal_cycle_s", 90.0)
+                    split = d.get("signal_split", 0.5)
+                    base_c = d.get("base_capacity_veh_hr", 1800.0)
+                    sig_del, _, _ = self.webster.calculate_control_delay(cycle, split, hourly_vol, base_c, duration_hours)
+                    actual_time = round(actual_time + sig_del, 2)
+                    delay = round(delay + sig_del, 2)
+                    eff_spd = round((length_m / max(0.1, actual_time)) * 3.6, 1)
+
+                # Add incident queuing delay if bottleneck oversaturated
+                if d.get("is_incident_edge") and hourly_vol > cap:
+                    oversat_ratio = (hourly_vol - cap) / max(1.0, cap)
+                    q_del = round(min(1800.0, oversat_ratio * ff_time * 4.0), 2)
+                    actual_time = round(actual_time + q_del, 2)
+                    delay = round(delay + q_del, 2)
+                    eff_spd = round((length_m / max(0.1, actual_time)) * 3.6, 1)
+
                 edge_metrics[eid] = EdgeMetricRecord(
                     edge_id=eid,
                     length_m=length_m,
@@ -266,7 +341,7 @@ class GraphEngine(SimulationEngine):
                     capacity_veh_hr=cap,
                     volume_to_capacity_ratio=vc_ratio,
                     average_speed_kmh=eff_spd,
-                    congested=vc_ratio >= 0.85,
+                    congested=vc_ratio >= 0.85 or delay > 30.0,
                     closed=False,
                 )
 
@@ -350,6 +425,18 @@ class GraphEngine(SimulationEngine):
             f"Seed {config.demand.seed} used for deterministic demand generation.",
             "Capacity formula: lanes * 1800 veh/hr/lane.",
         ]
+
+        if config.signals:
+            assumptions.append(
+                f"Webster signal control model active at node '{config.signals.intersection_node_id}' "
+                f"(Cycle={config.signals.cycle_time_s}s, GreenSplit={config.signals.green_split_ratio})."
+            )
+
+        if config.incidents:
+            assumptions.append(
+                f"Incident queue bottleneck model active on {len(config.incidents.edge_ids)} segment(s) "
+                f"(CapFactor={config.incidents.capacity_reduction_factor}, SpeedFactor={config.incidents.speed_reduction_factor})."
+            )
 
         warnings: List[str] = []
         if routing_failures > 0:

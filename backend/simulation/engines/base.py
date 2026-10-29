@@ -8,7 +8,7 @@ Ensures uniform configuration, result representation, and transparent data prove
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -56,7 +56,7 @@ class IncidentIntervention(BaseModel):
 
 class SignalTimingIntervention(BaseModel):
     """Intervention: modify traffic signal cycle or split at supported intersections."""
-    intersection_node_id: int
+    intersection_node_id: Union[int, str]
     cycle_time_s: float = Field(default=90.0, ge=30.0, le=240.0)
     green_split_ratio: float = Field(default=0.5, ge=0.1, le=0.9)
 

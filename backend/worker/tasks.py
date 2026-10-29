@@ -26,6 +26,7 @@ from ..simulation.engines.base import (
     DemandConfig,
     RoadClosureIntervention,
     IncidentIntervention,
+    SignalTimingIntervention,
     ScenarioConfig,
     ScenarioType,
 )
@@ -65,6 +66,15 @@ def _build_scenario_config_from_db(scenario_model) -> ScenarioConfig:
             speed_reduction_factor=i.get("speed_reduction_factor", 0.5),
         )
 
+    signals = None
+    if interventions.get("signals"):
+        s = interventions["signals"]
+        signals = SignalTimingIntervention(
+            intersection_node_id=s.get("intersection_node_id"),
+            cycle_time_s=s.get("cycle_time_s", 90.0),
+            green_split_ratio=s.get("green_split_ratio", 0.5),
+        )
+
     return ScenarioConfig(
         scenario_id=scenario_model.scenario_id,
         scenario_name=scenario_model.name,
@@ -75,6 +85,7 @@ def _build_scenario_config_from_db(scenario_model) -> ScenarioConfig:
         demand=demand,
         closures=closures,
         incidents=incidents,
+        signals=signals,
     )
 
 

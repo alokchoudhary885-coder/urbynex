@@ -10,6 +10,8 @@ from backend.simulation.engines.base import (
     DemandConfig,
     DemandProfile,
     RoadClosureIntervention,
+    SignalTimingIntervention,
+    IncidentIntervention,
     ScenarioConfig,
     ScenarioType,
 )
@@ -137,3 +139,56 @@ def test_road_closure_intervention(engine):
     assert closed_edge_id in result.edge_metrics
     assert result.edge_metrics[closed_edge_id].closed is True
     assert result.edge_metrics[closed_edge_id].volume_veh == 0
+
+
+def test_signal_timing_intervention(engine):
+    """Signal timing intervention applies Webster control delay to approach edges."""
+    loader = NetworkLoader()
+    G, _ = loader.load_network("jaipur_v1")
+
+    # Pick an intersection node with in-edges
+    target_node = next(iter(G.nodes()))
+
+    config = ScenarioConfig(
+        scenario_id="signal_test",
+        scenario_name="Signal Optimization Test",
+        network_id="jaipur_v1",
+        scenario_type=ScenarioType.SIGNAL_TIMING,
+        demand=DemandConfig(vehicle_count=60, duration_seconds=1800, seed=42),
+        signals=SignalTimingIntervention(
+            intersection_node_id=target_node,
+            cycle_time_s=90.0,
+            green_split_ratio=0.6,
+        ),
+    )
+
+    result = engine.run(config)
+    assert result.status == "completed"
+    assert any("Webster signal control model" in a for a in result.assumptions)
+
+
+def test_incident_bottleneck_queue_delay(engine):
+    """Incident causing severe capacity drop triggers physical queuing delay."""
+    loader = NetworkLoader()
+    G, _ = loader.load_network("jaipur_v1")
+
+    sample_edge = next(iter(G.edges(data=True)))
+    incident_edge_id = sample_edge[2].get("edge_id")
+
+    config = ScenarioConfig(
+        scenario_id="incident_test",
+        scenario_name="Incident Bottleneck Test",
+        network_id="jaipur_v1",
+        scenario_type=ScenarioType.INCIDENT,
+        demand=DemandConfig(vehicle_count=80, duration_seconds=1800, seed=42),
+        incidents=IncidentIntervention(
+            edge_ids=[incident_edge_id],
+            capacity_reduction_factor=0.2,
+            speed_reduction_factor=0.3,
+        ),
+    )
+
+    result = engine.run(config)
+    assert result.status == "completed"
+    assert any("Incident queue bottleneck model" in a for a in result.assumptions)
+    assert incident_edge_id in result.edge_metrics
