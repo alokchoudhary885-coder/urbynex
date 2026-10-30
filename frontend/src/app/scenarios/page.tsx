@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useScenarios } from "@/lib/hooks/useApi";
 import { api, ApiClientError } from "@/lib/api/client";
-import type { CreateScenarioRequest, ScenarioType } from "@/lib/api/types";
+import type { CreateScenarioRequest, ScenarioType, MonteCarloResponse } from "@/lib/api/types";
 
 const SCENARIO_TYPES: { value: ScenarioType; label: string; desc: string }[] = [
   { value: "baseline", label: "Baseline Network", desc: "Standard traffic flow under normal capacity." },
@@ -365,6 +365,10 @@ function ScenarioCard({
   const [runError, setRunError] = useState<string | null>(null);
   const [runAsync, setRunAsync] = useState(false);
 
+  const [mcRunning, setMcRunning] = useState(false);
+  const [mcResult, setMcResult] = useState<MonteCarloResponse | null>(null);
+  const [mcError, setMcError] = useState<string | null>(null);
+
   async function handleRun() {
     setRunning(true);
     setRunError(null);
@@ -379,6 +383,22 @@ function ScenarioCard({
       setRunError(err instanceof ApiClientError ? err.body.message : String(err));
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function handleMonteCarloRun() {
+    setMcRunning(true);
+    setMcError(null);
+    try {
+      const res = await api.runMonteCarlo({
+        scenario_id: scenario.scenario_id,
+        seeds: [42, 101, 202, 303, 404],
+      });
+      setMcResult(res);
+    } catch (err: unknown) {
+      setMcError(err instanceof ApiClientError ? err.body.message : String(err));
+    } finally {
+      setMcRunning(false);
     }
   }
 
@@ -448,6 +468,47 @@ function ScenarioCard({
         </div>
       )}
 
+      {mcResult && (
+        <div className="bg-indigo-950/40 border border-indigo-800/80 rounded-xl p-4 space-y-3 text-xs">
+          <div className="flex items-center justify-between text-indigo-300">
+            <span className="font-semibold flex items-center gap-1.5">
+              <span>🎲</span> Monte Carlo Batch Simulation (95% CI)
+            </span>
+            <span className="font-mono text-[11px] text-indigo-400">
+              {mcResult.seed_count} seeds · {mcResult.total_execution_time_seconds.toFixed(2)}s
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {Object.entries(mcResult.metrics_summary).map(([metricKey, m]) => (
+              <div key={metricKey} className="bg-gray-950/80 p-2.5 rounded-lg border border-indigo-900/40">
+                <span className="text-[10px] text-gray-400 block truncate">{m.metric_name}</span>
+                <div className="text-white font-mono font-bold text-xs mt-0.5">
+                  {m.mean.toFixed(1)} <span className="text-[10px] text-gray-500 font-normal">{m.unit}</span>
+                </div>
+                <div className="text-[10px] text-indigo-300/90 font-mono mt-1">
+                  ±{((m.ci_95_upper - m.ci_95_lower) / 2).toFixed(1)} (95% CI)
+                </div>
+                <div className="text-[9px] text-gray-500 font-mono mt-0.5">
+                  [{m.ci_95_lower.toFixed(1)} - {m.ci_95_upper.toFixed(1)}]
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-[10px] text-gray-400 flex items-center justify-between border-t border-indigo-950 pt-2">
+            <span>RNG Seeds: [{mcResult.seeds.join(", ")}]</span>
+            <span className="font-mono">{mcResult.individual_run_ids.length} batch runs recorded</span>
+          </div>
+        </div>
+      )}
+
+      {mcError && (
+        <div className="bg-red-950 border border-red-800 text-red-300 rounded-xl p-3 text-xs">
+          Monte Carlo Error: {mcError}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
         <label className="flex items-center gap-2 text-xs text-gray-400 cursor-pointer">
           <input
@@ -459,22 +520,42 @@ function ScenarioCard({
           <span>Background Execution (Celery/Async queue)</span>
         </label>
 
-        <button
-          onClick={handleRun}
-          disabled={running}
-          className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-all shadow-md shadow-emerald-950 flex items-center justify-center gap-2"
-        >
-          {running ? (
-            <>
-              <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span>Simulating...</span>
-            </>
-          ) : (
-            <>
-              <span>▶ Execute Engine A</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleMonteCarloRun}
+            disabled={mcRunning || running}
+            className="px-3 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg transition-all shadow-md shadow-indigo-950 flex items-center justify-center gap-1.5"
+            title="Execute 5 stochastic seed runs and compute 95% Confidence Intervals"
+          >
+            {mcRunning ? (
+              <>
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Simulating 5 Seeds...</span>
+              </>
+            ) : (
+              <>
+                <span>🎲 5-Seed Monte Carlo</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleRun}
+            disabled={running || mcRunning}
+            className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-lg transition-all shadow-md shadow-emerald-950 flex items-center justify-center gap-2"
+          >
+            {running ? (
+              <>
+                <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Simulating...</span>
+              </>
+            ) : (
+              <>
+                <span>▶ Execute Single</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

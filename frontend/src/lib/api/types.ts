@@ -140,6 +140,34 @@ export interface RunSimulationRequest {
   run_async?: boolean;
 }
 
+// ── Monte Carlo Simulation (M3.5/M3.6) ────────────────────────────────────────
+
+export interface MonteCarloRunRequest {
+  scenario_id: string;
+  seeds?: number[];
+  engine?: string;
+}
+
+export interface MonteCarloMetricSummary {
+  metric_name: string;
+  unit: string;
+  mean: number;
+  std_dev: number;
+  min_value: number;
+  max_value: number;
+  ci_95_lower: number;
+  ci_95_upper: number;
+}
+
+export interface MonteCarloResponse {
+  scenario_id: string;
+  seed_count: number;
+  seeds: number[];
+  metrics_summary: Record<string, MonteCarloMetricSummary>;
+  individual_run_ids: string[];
+  total_execution_time_seconds: number;
+}
+
 // ── Comparison ────────────────────────────────────────────────────────────────
 
 export interface CompareRequest {

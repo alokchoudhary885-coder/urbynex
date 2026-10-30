@@ -16,6 +16,8 @@ import type {
   SimulationRunStatus,
   SimulationMetrics,
   RunSimulationRequest,
+  MonteCarloRunRequest,
+  MonteCarloResponse,
   CompareRequest,
   ComparisonResult,
   LoginRequest,
@@ -145,6 +147,11 @@ export const api = {
     token?: string,
   ): Promise<{ runs: SimulationRunStatus[]; total: number }> =>
     get(`/simulations?limit=${limit}`, token),
+
+  runMonteCarlo: (
+    req: MonteCarloRunRequest,
+    token?: string,
+  ): Promise<MonteCarloResponse> => post("/simulations/monte-carlo", req, token),
 
   // ── Comparison ────────────────────────────────────────────────────────────
 
