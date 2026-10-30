@@ -15,6 +15,9 @@ from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from ..dependencies import get_repository, get_simulation_engine
 from ..schemas.simulations import (
+    MonteCarloMetricSummary,
+    MonteCarloResponse,
+    MonteCarloRunRequest,
     SimulationMetricsResponse,
     SimulationRunListResponse,
     SimulationRunStatusResponse,
@@ -239,3 +242,54 @@ def list_simulation_runs(
         for m in models
     ]
     return SimulationRunListResponse(runs=items, total=len(items))
+
+
+@router.post("/simulations/monte-carlo", response_model=MonteCarloResponse)
+def run_monte_carlo_batch(
+    req: MonteCarloRunRequest,
+    service: SimulationService = Depends(get_simulation_service),
+    repo: RunRepository = Depends(get_repository),
+) -> MonteCarloResponse:
+    """
+    Executes a multi-seed Monte Carlo batch on a scenario to quantify stochastic
+    variance and compute 95% confidence intervals across key traffic metrics.
+    """
+    scenario = repo.get_scenario(req.scenario_id)
+    if not scenario:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scenario '{req.scenario_id}' not found.",
+        )
+
+    try:
+        batch = service.run_monte_carlo(
+            scenario_id=req.scenario_id,
+            seeds=req.seeds,
+            engine_id=req.engine,
+        )
+        return MonteCarloResponse(
+            scenario_id=batch.scenario_id,
+            seed_count=batch.seed_count,
+            seeds=batch.seeds,
+            metrics_summary={
+                k: MonteCarloMetricSummary(
+                    metric_name=v.metric_name,
+                    unit=v.unit,
+                    mean=v.mean,
+                    std_dev=v.std_dev,
+                    min_value=v.min_value,
+                    max_value=v.max_value,
+                    ci_95_lower=v.ci_95_lower,
+                    ci_95_upper=v.ci_95_upper,
+                )
+                for k, v in batch.metrics_summary.items()
+            },
+            individual_run_ids=[r.run_id for r in batch.individual_runs],
+            total_execution_time_seconds=batch.total_execution_time_seconds,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Monte Carlo simulation failed: {e}",
+        )
+

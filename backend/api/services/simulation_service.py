@@ -22,6 +22,7 @@ from ...simulation.engines.base import (
 )
 from ...simulation.engines.graph_engine import GraphEngine
 from ...simulation.comparison import ScenarioComparator, ComparisonResult
+from ...simulation.monte_carlo import MonteCarloRunner, MonteCarloBatchResult
 
 
 class SimulationService:
@@ -31,19 +32,13 @@ class SimulationService:
         self.repo = repo
         self.engine = engine or GraphEngine()
 
-    def run_simulation(
+    def _build_scenario_config(
         self,
-        scenario_id: str,
-        engine_id: str = "graph_engine_v1",
+        scenario_model,
         seed_override: Optional[int] = None,
-    ) -> SimulationResult:
-        """Executes a simulation synchronously and persists the result."""
-        scenario_model = self.repo.get_scenario(scenario_id)
-        if not scenario_model:
-            raise ValueError(f"Scenario '{scenario_id}' not found.")
-
-        # Reconstruct ScenarioConfig from database model
-        demand_data = scenario_model.demand_json or {}
+    ) -> ScenarioConfig:
+        """Reconstructs a ScenarioConfig from a database scenario record."""
+        demand_data = dict(scenario_model.demand_json or {})
         if seed_override is not None:
             demand_data["seed"] = seed_override
         demand = DemandConfig(**demand_data)
@@ -53,7 +48,7 @@ class SimulationService:
         incidents = IncidentIntervention(**interventions["incidents"]) if "incidents" in interventions and interventions["incidents"] else None
         signals = SignalTimingIntervention(**interventions["signals"]) if "signals" in interventions and interventions["signals"] else None
 
-        config = ScenarioConfig(
+        return ScenarioConfig(
             scenario_id=scenario_model.scenario_id,
             scenario_name=scenario_model.name,
             description=scenario_model.description,
@@ -66,6 +61,19 @@ class SimulationService:
             signals=signals,
         )
 
+    def run_simulation(
+        self,
+        scenario_id: str,
+        engine_id: str = "graph_engine_v1",
+        seed_override: Optional[int] = None,
+    ) -> SimulationResult:
+        """Executes a simulation synchronously and persists the result."""
+        scenario_model = self.repo.get_scenario(scenario_id)
+        if not scenario_model:
+            raise ValueError(f"Scenario '{scenario_id}' not found.")
+
+        config = self._build_scenario_config(scenario_model, seed_override=seed_override)
+
         # Validate scenario
         validation = self.engine.validate_scenario(config)
         if not validation.valid:
@@ -77,6 +85,26 @@ class SimulationService:
         # Persist result
         self.repo.save_simulation_run(result)
         return result
+
+    def run_monte_carlo(
+        self,
+        scenario_id: str,
+        seeds: list[int],
+        engine_id: str = "graph_engine_v1",
+    ) -> MonteCarloBatchResult:
+        """Executes a multi-seed Monte Carlo batch across the scenario."""
+        scenario_model = self.repo.get_scenario(scenario_id)
+        if not scenario_model:
+            raise ValueError(f"Scenario '{scenario_id}' not found.")
+
+        config = self._build_scenario_config(scenario_model)
+
+        validation = self.engine.validate_scenario(config)
+        if not validation.valid:
+            raise ValueError(f"Scenario validation failed: {'; '.join(validation.errors)}")
+
+        runner = MonteCarloRunner(engine=self.engine, repo=self.repo)
+        return runner.run_batch(config, seeds=seeds, persist_runs=True)
 
     def execute_background_job(
         self,

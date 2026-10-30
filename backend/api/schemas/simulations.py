@@ -52,3 +52,37 @@ class SimulationMetricsResponse(BaseModel):
 class SimulationRunListResponse(BaseModel):
     runs: List[SimulationRunStatusResponse]
     total: int
+
+
+class MonteCarloRunRequest(BaseModel):
+    """Request to execute a multi-seed Monte Carlo batch for statistical confidence."""
+    scenario_id: str = Field(description="Scenario identifier to evaluate")
+    seeds: List[int] = Field(
+        default=[42, 101, 202, 303, 404],
+        min_length=2,
+        max_length=20,
+        description="List of RNG seeds to sample",
+    )
+    engine: str = Field(default="graph_engine_v1", description="Simulation engine identifier")
+
+
+class MonteCarloMetricSummary(BaseModel):
+    """Aggregated statistical distribution for a single simulation metric."""
+    metric_name: str
+    unit: str
+    mean: float
+    std_dev: float
+    min_value: float
+    max_value: float
+    ci_95_lower: float
+    ci_95_upper: float
+
+
+class MonteCarloResponse(BaseModel):
+    """Statistical summary of multi-seed Monte Carlo batch execution."""
+    scenario_id: str
+    seed_count: int
+    seeds: List[int]
+    metrics_summary: Dict[str, MonteCarloMetricSummary]
+    individual_run_ids: List[str]
+    total_execution_time_seconds: float

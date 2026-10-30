@@ -3,7 +3,15 @@ from .auth import RegisterRequest, LoginRequest, TokenResponse, UserResponse, Cu
 from .common import ErrorResponse, HealthResponse
 from .cities import CityResponse, CityListResponse, NetworkResponse, NetworkListResponse, EdgeSummary, EdgeListResponse
 from .scenarios import ScenarioCreateRequest, ScenarioResponse, ScenarioListResponse
-from .simulations import SimulationRunSubmitRequest, SimulationRunStatusResponse, SimulationMetricsResponse, SimulationRunListResponse
+from .simulations import (
+    SimulationRunSubmitRequest,
+    SimulationRunStatusResponse,
+    SimulationMetricsResponse,
+    SimulationRunListResponse,
+    MonteCarloRunRequest,
+    MonteCarloMetricSummary,
+    MonteCarloResponse,
+)
 from .comparison import ComparisonRequest, ComparisonResponse
 
 __all__ = [
@@ -27,6 +35,9 @@ __all__ = [
     "SimulationRunStatusResponse",
     "SimulationMetricsResponse",
     "SimulationRunListResponse",
+    "MonteCarloRunRequest",
+    "MonteCarloMetricSummary",
+    "MonteCarloResponse",
     "ComparisonRequest",
     "ComparisonResponse",
 ]

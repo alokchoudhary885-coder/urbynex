@@ -283,3 +283,54 @@ def test_error_handling_not_found(client):
     res_run = client.get("/api/simulations/run_fake_12345")
     assert res_run.status_code == 404
     assert res_run.json()["error"] == "not_found"
+
+
+def test_run_monte_carlo_batch_endpoint(client):
+    # 1. Create a test scenario
+    scen_res = client.post(
+        "/api/scenarios",
+        json={
+            "name": "Monte Carlo API Integration Scenario",
+            "city_id": "jaipur",
+            "network_id": "jaipur_v1",
+            "scenario_type": "baseline",
+            "demand": {"vehicle_count": 30, "duration_seconds": 900, "seed": 42},
+        },
+    )
+    assert scen_res.status_code == 201
+    scenario_id = scen_res.json()["scenario_id"]
+
+    # 2. Run Monte Carlo batch
+    mc_res = client.post(
+        "/api/simulations/monte-carlo",
+        json={
+            "scenario_id": scenario_id,
+            "seeds": [11, 22, 33],
+            "engine": "graph_engine_v1",
+        },
+    )
+    assert mc_res.status_code == 200, f"Monte Carlo request failed: {mc_res.text}"
+    mc_data = mc_res.json()
+    assert mc_data["scenario_id"] == scenario_id
+    assert mc_data["seed_count"] == 3
+    assert mc_data["seeds"] == [11, 22, 33]
+    assert len(mc_data["individual_run_ids"]) == 3
+    assert "metrics_summary" in mc_data
+
+    # Check distribution metrics
+    avg_tt = mc_data["metrics_summary"]["avg_travel_time_s"]
+    assert avg_tt["mean"] > 0
+    assert avg_tt["min_value"] <= avg_tt["mean"] <= avg_tt["max_value"]
+    assert avg_tt["ci_95_lower"] <= avg_tt["ci_95_upper"]
+
+
+def test_run_monte_carlo_not_found(client):
+    mc_res = client.post(
+        "/api/simulations/monte-carlo",
+        json={
+            "scenario_id": "nonexistent_scenario_id",
+            "seeds": [10, 20],
+        },
+    )
+    assert mc_res.status_code == 404
+
