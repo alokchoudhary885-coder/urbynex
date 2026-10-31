@@ -220,12 +220,12 @@ Subtasks:
 **Goal:** All 6 scenario types working, SUMO adapter optional.
 
 ### Key Milestones
-- M3.1: Road closure scenario (edge removal + rerouting)
-- M3.2: Signal timing scenario (configurable phase splits)
-- M3.3: Traffic incident scenario (capacity/speed reduction)
-- M3.4: Live-informed and historical-informed scenarios
-- M3.5: SUMO adapter (when binary available)
-- M3.6: Reproducibility metadata and multi-seed runs
+- [x] M3.1: Road closure scenario (edge removal + rerouting) (commit `e8ff414`)
+- [x] M3.2: Signal timing scenario (Webster cycle time and control delay model) (commit `e8ff414`)
+- [x] M3.3: Traffic incident scenario (queue bottleneck and capacity degradation) (commit `e8ff414`)
+- [x] M3.4: Live-informed and historical-informed scenarios (commit `5000dcf`)
+- [x] M3.5: Monte Carlo multi-seed batch simulation (commit `b7730f5`)
+- [x] M3.6: Reproducibility metadata, 95% confidence intervals & UI (commit `c80778e`)
 
 ---
 
@@ -234,11 +234,11 @@ Subtasks:
 **Goal:** Delhi network added, historical CSV/JSON import working.
 
 ### Key Milestones
-- M4.1: Delhi Connaught Place corridor network
-- M4.2: Network versioning and city metadata API
-- M4.3: Historical CSV/JSON import with schema validation
-- M4.4: Data quality reports and coverage indicators
-- M4.5: Live provider adapter framework (graceful unavailable state)
+- [x] M4.1: Delhi Connaught Place corridor network (4,949 edges, 2,886 nodes) (commit `378a3f9`)
+- [x] M4.2: Network versioning and multi-city metadata API (commit `378a3f9`)
+- [x] M4.3: Historical CSV/JSON import with schema validation (commit `5000dcf`)
+- [x] M4.4: Data quality reports and coverage indicators (commit `5000dcf`)
+- [x] M4.5: Live provider adapter framework (graceful unavailable state) (commit `5000dcf`)
 
 ---
 
