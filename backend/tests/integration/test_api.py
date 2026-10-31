@@ -334,3 +334,46 @@ def test_run_monte_carlo_not_found(client):
     )
     assert mc_res.status_code == 404
 
+
+def test_get_live_provider_status(client):
+    res = client.get("/api/data/live/status")
+    assert res.status_code == 200
+    data = res.json()
+    assert "providers" in data
+    assert isinstance(data["providers"], list)
+    assert len(data["providers"]) >= 2
+    for p in data["providers"]:
+        assert "provider_name" in p
+        assert "status" in p
+        assert "is_live" in p
+
+
+def test_upload_historical_csv_endpoint(client):
+    csv_bytes = b"timestamp,edge_id,speed_kmh,volume_veh_per_hr\n2024-01-15T08:00:00Z,edge_1,35.0,1000\n2024-01-15T08:15:00Z,edge_1,32.0,1200\n"
+    res = client.post(
+        "/api/data/historical/upload?network_id=jaipur_v1&format=csv",
+        content=csv_bytes,
+        headers={"Content-Type": "text/csv"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["format"] == "CSV"
+    assert data["observation_count"] == 2
+    assert data["quality_report"]["valid_rows"] == 2
+    assert data["quality_report"]["completeness_pct"] == 100.0
+
+
+def test_upload_historical_json_endpoint(client):
+    json_bytes = b'{"source": "survey", "observations": [{"timestamp": "2024-01-15T09:00:00Z", "edge_id": "edge_a", "speed_kmh": 40.0, "volume_veh_per_hr": 800}]}'
+    res = client.post(
+        "/api/data/historical/upload?network_id=jaipur_v1",
+        content=json_bytes,
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["format"] == "JSON"
+    assert data["observation_count"] == 1
+    assert data["quality_report"]["valid_rows"] == 1
+
+

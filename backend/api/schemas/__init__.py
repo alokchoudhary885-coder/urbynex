@@ -13,6 +13,13 @@ from .simulations import (
     MonteCarloResponse,
 )
 from .comparison import ComparisonRequest, ComparisonResponse
+from .data_ingestion import (
+    DataQualityReportSchema,
+    HourlyProfileSchema,
+    HistoricalImportResponse,
+    LiveProviderStatusSchema,
+    LiveProvidersListResponse,
+)
 
 __all__ = [
     "RegisterRequest",
@@ -40,4 +47,9 @@ __all__ = [
     "MonteCarloResponse",
     "ComparisonRequest",
     "ComparisonResponse",
+    "DataQualityReportSchema",
+    "HourlyProfileSchema",
+    "HistoricalImportResponse",
+    "LiveProviderStatusSchema",
+    "LiveProvidersListResponse",
 ]

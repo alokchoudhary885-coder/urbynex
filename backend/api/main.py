@@ -25,6 +25,7 @@ from .routes import (
     simulations_router,
     comparison_router,
     worker_router,
+    data_ingestion_router,
 )
 from ..db.repository import RunRepository
 from ..simulation.network_loader import NetworkLoader
@@ -165,3 +166,4 @@ for prefix in ["/api", "/api/v1"]:
     app.include_router(simulations_router, prefix=prefix)
     app.include_router(comparison_router, prefix=prefix)
     app.include_router(worker_router, prefix=prefix)
+    app.include_router(data_ingestion_router, prefix=prefix)
