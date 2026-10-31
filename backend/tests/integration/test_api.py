@@ -64,6 +64,21 @@ def test_list_city_networks(client):
     assert net["edge_count"] > 2000
 
 
+def test_list_delhi_networks(client):
+    response = client.get("/api/cities/delhi/networks")
+    assert response.status_code == 200
+    data = response.json()
+    assert "networks" in data
+    assert len(data["networks"]) >= 1
+
+    net = data["networks"][0]
+    assert net["network_id"] == "delhi_v1"
+    assert net["city_id"] == "delhi"
+    assert net["simulation_ready"] is True
+    assert net["node_count"] > 1000
+    assert net["edge_count"] > 2000
+
+
 def test_get_network_geojson(client):
     response = client.get("/api/networks/jaipur_v1/geojson")
     assert response.status_code == 200

@@ -269,13 +269,33 @@ export function CityMap({
             },
           });
 
-          // Fit bounds to network if coordinates exist
+          // Fit bounds to network
+          let bounds: [number, number, number, number] | null = null;
           if (geojsonData.bbox && geojsonData.bbox.length === 4) {
-            const [minX, minY, maxX, maxY] = geojsonData.bbox;
+            bounds = geojsonData.bbox;
+          } else if (geojsonData.features && geojsonData.features.length > 0) {
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const f of geojsonData.features) {
+              const coords = f.geometry?.coordinates;
+              if (Array.isArray(coords)) {
+                for (const pt of coords) {
+                  if (pt[0] < minX) minX = pt[0];
+                  if (pt[1] < minY) minY = pt[1];
+                  if (pt[0] > maxX) maxX = pt[0];
+                  if (pt[1] > maxY) maxY = pt[1];
+                }
+              }
+            }
+            if (minX !== Infinity) {
+              bounds = [minX, minY, maxX, maxY];
+            }
+          }
+
+          if (bounds) {
             map.fitBounds(
               [
-                [minX, minY],
-                [maxX, maxY],
+                [bounds[0], bounds[1]],
+                [bounds[2], bounds[3]],
               ],
               { padding: 40, maxZoom: 15 }
             );
@@ -397,8 +417,8 @@ export function CityMap({
       {loading && (
         <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 gap-3">
           <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-medium text-gray-300">Loading Jaipur Road Network GeoJSON...</p>
-          <span className="text-xs text-gray-500 font-mono">5,196 edges · 2,538 nodes</span>
+          <p className="text-sm font-medium text-gray-300">Loading Road Network GeoJSON...</p>
+          <span className="text-xs text-gray-500 font-mono">{networkId} · MapLibre GL Digital Twin</span>
         </div>
       )}
 

@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "node_count": 2886,
+  "edge_count": 4949,
+  "total_road_length_km": 139.54,
+  "is_strongly_connected": true,
+  "scc_coverage_pct": 100.0,
+  "issues": [],
+  "warnings": [],
+  "validated_at": "2026-10-31T17:20:10.642894+00:00"
+}

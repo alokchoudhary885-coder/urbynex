@@ -1,0 +1,55 @@
+{
+  "network_id": "delhi_v1",
+  "city_id": "delhi",
+  "city_name": "Delhi",
+  "corridor": "Connaught Place - Barakhamba Corridor",
+  "version": "v1",
+  "source": "OpenStreetMap contributors",
+  "license": "Open Database License (ODbL) 1.0",
+  "attribution": "\u00a9 OpenStreetMap contributors",
+  "bbox": {
+    "south": 28.621,
+    "west": 77.206,
+    "north": 28.641,
+    "east": 77.228
+  },
+  "node_count": 2886,
+  "edge_count": 4949,
+  "total_road_length_km": 139.54,
+  "is_strongly_connected": true,
+  "scc_coverage_pct": 100.0,
+  "validation_status": "passed",
+  "sha256_hash": "b22f384edb0dced7",
+  "files": {
+    "graphml": "network.graphml",
+    "graphml_size_kb": 3508,
+    "geojson": "network.geojson",
+    "geojson_size_kb": 2786
+  },
+  "assumptions": {
+    "total_edges": 4949,
+    "speed_assumed_count": 4781,
+    "speed_assumed_pct": 96.6,
+    "lanes_assumed_count": 4201,
+    "lanes_assumed_pct": 84.9,
+    "capacity_model": "lanes * 1800 veh/hr/lane",
+    "default_speeds": {
+      "motorway": 60.0,
+      "motorway_link": 40.0,
+      "trunk": 50.0,
+      "trunk_link": 35.0,
+      "primary": 50.0,
+      "primary_link": 35.0,
+      "secondary": 40.0,
+      "secondary_link": 30.0,
+      "tertiary": 35.0,
+      "tertiary_link": 25.0,
+      "residential": 30.0,
+      "unclassified": 30.0,
+      "living_street": 20.0
+    },
+    "note": "Documented urban Indian road class speeds applied where maxspeed tag is absent."
+  },
+  "imported_at": "2026-10-31T17:20:12.940821+00:00",
+  "simulation_ready": true
+}

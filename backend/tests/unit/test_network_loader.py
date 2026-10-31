@@ -88,3 +88,25 @@ def test_geojson_file_accessible(loader):
     assert geojson_path is not None
     assert geojson_path.exists()
     assert geojson_path.stat().st_size > 1000
+
+
+def test_load_delhi_network_success(loader):
+    G, metadata = loader.load_network("delhi_v1")
+    assert isinstance(G, (nx.DiGraph, nx.MultiDiGraph))
+    assert G.is_directed()
+    assert metadata["city_id"] == "delhi"
+    assert metadata["city_name"] == "Delhi"
+    assert len(G.nodes) == metadata["node_count"]
+    assert len(G.edges) == metadata["edge_count"]
+
+    # Verify Delhi coordinates (Connaught Place corridor: ~28.62-28.64 lat, 77.20-77.23 lon)
+    sample_node = next(iter(G.nodes))
+    ndata = G.nodes[sample_node]
+    assert "x" in ndata and "y" in ndata
+    assert 77.20 <= ndata["x"] <= 77.24
+    assert 28.61 <= ndata["y"] <= 28.65
+
+    # Routing test
+    nodes = list(G.nodes)
+    path = nx.shortest_path(G, source=nodes[0], target=nodes[25], weight="free_flow_time_s")
+    assert len(path) >= 2

@@ -153,7 +153,7 @@ def get_root():
         "docs_url": "/docs",
         "api_prefix": "/api",
         "api_v1_prefix": "/api/v1",
-        "supported_cities": ["jaipur"],
+        "supported_cities": ["jaipur", "delhi"],
     }
 
 
