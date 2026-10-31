@@ -20,6 +20,14 @@ from .data_ingestion import (
     LiveProviderStatusSchema,
     LiveProvidersListResponse,
 )
+from .copilot import (
+    CopilotChatRequest,
+    CopilotChatResponse,
+    ApprovedToolDefinition,
+    ApprovedToolsListResponse,
+    ToolAuditEntrySchema,
+    ToolAuditListResponse,
+)
 
 __all__ = [
     "RegisterRequest",
@@ -52,4 +60,10 @@ __all__ = [
     "HistoricalImportResponse",
     "LiveProviderStatusSchema",
     "LiveProvidersListResponse",
+    "CopilotChatRequest",
+    "CopilotChatResponse",
+    "ApprovedToolDefinition",
+    "ApprovedToolsListResponse",
+    "ToolAuditEntrySchema",
+    "ToolAuditListResponse",
 ]

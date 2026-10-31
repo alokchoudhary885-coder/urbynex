@@ -392,3 +392,36 @@ def test_upload_historical_json_endpoint(client):
     assert data["quality_report"]["valid_rows"] == 1
 
 
+def test_copilot_chat_endpoint(client):
+    res = client.post(
+        "/api/ai/chat",
+        json={"query": "What are the speed regulations along MI Road in Jaipur?"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert "answer" in data
+    assert "citations" in data
+    assert len(data["citations"]) >= 1
+    assert data["data_label"] == "CITED_DOCUMENT"
+
+
+def test_copilot_list_tools_endpoint(client):
+    res = client.get("/api/ai/tools")
+    assert res.status_code == 200
+    data = res.json()
+    assert "tools" in data
+    assert data["total"] >= 5
+    tool_names = [t["name"] for t in data["tools"]]
+    assert "get_cities" in tool_names
+    assert "search_city_documents" in tool_names
+    assert "get_simulation_metrics" in tool_names
+
+
+def test_copilot_audit_endpoint(client):
+    res = client.get("/api/ai/audit")
+    assert res.status_code == 200
+    data = res.json()
+    assert "entries" in data
+    assert "total" in data
+
+

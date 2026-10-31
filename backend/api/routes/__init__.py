@@ -7,6 +7,7 @@ from .simulations import router as simulations_router
 from .comparison import router as comparison_router
 from .worker import router as worker_router
 from .data_ingestion import router as data_ingestion_router
+from .copilot import router as copilot_router
 
 __all__ = [
     "auth_router",
@@ -17,4 +18,5 @@ __all__ = [
     "comparison_router",
     "worker_router",
     "data_ingestion_router",
+    "copilot_router",
 ]
