@@ -272,6 +272,52 @@ export interface CopilotToolsResponse {
   total: number;
 }
 
+// ── Data Ingestion & Live Providers (Phase 4 / Phase 6) ──────────────────────
+
+export interface DataQualityReport {
+  total_rows: number;
+  valid_rows: number;
+  invalid_rows: number;
+  duplicate_rows: number;
+  unmapped_edges_count: number;
+  completeness_pct: number;
+  min_timestamp?: string;
+  max_timestamp?: string;
+  speed_outliers_count: number;
+  issues: string[];
+}
+
+export interface HourlyProfile {
+  hour: number;
+  avg_speed_kmh: number;
+  total_volume: number;
+  sample_count: number;
+  flow_factor: number;
+}
+
+export interface HistoricalImportResponse {
+  source_name: string;
+  format: string;
+  observation_count: number;
+  quality_report: DataQualityReport;
+  hourly_profiles: Record<string, HourlyProfile>;
+  mapped_edges_count: number;
+}
+
+export interface LiveProviderStatus {
+  provider_name: string;
+  status: string;
+  is_live: boolean;
+  coverage_area: string;
+  message: string;
+  last_checked_at: string;
+}
+
+export interface LiveProvidersListResponse {
+  providers: LiveProviderStatus[];
+  any_live: boolean;
+}
+
 // ── API Error ────────────────────────────────────────────────────────────────
 
 export interface ApiError {

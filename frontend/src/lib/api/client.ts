@@ -29,6 +29,8 @@ import type {
   CopilotChatRequest,
   CopilotChatResponse,
   CopilotToolsResponse,
+  LiveProvidersListResponse,
+  HistoricalImportResponse,
 } from "./types";
 
 const BASE_URL =
@@ -53,17 +55,25 @@ async function request<T>(
   path: string,
   body?: unknown,
   token?: string,
+  contentType = "application/json",
 ): Promise<T> {
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    "Content-Type": contentType,
     Accept: "application/json",
   };
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
+  const payload =
+    body !== undefined
+      ? typeof body === "string"
+        ? body
+        : JSON.stringify(body)
+      : undefined;
+
   const res = await fetch(`${BASE_URL}/api${path}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: payload,
     // No-store: simulation results change; let callers add caching headers
     cache: "no-store",
   });
@@ -176,6 +186,25 @@ export const api = {
   // ── Worker Status ────────────────────────────────────────────────────────
 
   getWorkerStatus: (): Promise<WorkerStatus> => get("/worker/status"),
+
+  // ── Data Ingestion & Live Status (Phase 4 / Phase 6) ─────────────────────
+
+  getLiveProviders: (): Promise<LiveProvidersListResponse> =>
+    get("/data/live/status"),
+
+  uploadHistoricalTraffic: (
+    data: string,
+    format: "csv" | "json",
+    networkId = "jaipur_v1",
+    sourceName = "user_upload",
+  ): Promise<HistoricalImportResponse> =>
+    request<HistoricalImportResponse>(
+      "POST",
+      `/data/historical/upload?network_id=${networkId}&source_name=${sourceName}&format=${format}`,
+      data,
+      undefined,
+      format === "csv" ? "text/csv" : "application/json",
+    ),
 
   // ── AI Copilot (Phase 5) ──────────────────────────────────────────────────
 
