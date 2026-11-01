@@ -1,0 +1,75 @@
+services:
+  # ── In-Memory Cache & Message Broker ────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: urbynex-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── FastAPI Backend API ─────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: urbynex-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=urbynex-dev-secret-key-change-in-prod-2026
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - DATABASE_PATH=/app/backend/db/urbynex.db
+    volumes:
+      - backend_data:/app/backend/db
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Celery Simulation Worker ────────────────────────────────────────────────
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: urbynex-worker
+    command: ["python", "-m", "celery", "-A", "backend.worker.celery_app.celery_app", "worker", "--loglevel=info", "-Q", "simulations", "--concurrency=2"]
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=urbynex-dev-secret-key-change-in-prod-2026
+      - DATABASE_PATH=/app/backend/db/urbynex.db
+    volumes:
+      - backend_data:/app/backend/db
+    depends_on:
+      backend:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Next.js 15 Frontend ─────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:8000
+    container_name: urbynex-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  backend_data:
