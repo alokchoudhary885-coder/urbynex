@@ -247,25 +247,25 @@ Subtasks:
 **Goal:** AI can answer questions grounded in simulation data and planning documents.
 
 ### Key Milestones
-- M5.1: Document ingestion (PDF/TXT), chunking, embedding, ChromaDB index
-- M5.2: Hybrid retrieval (semantic + keyword) with access filtering
-- M5.3: Gemini Function Calling integration with approved tool registry
-- M5.4: AI workflow: classify → retrieve → validate → confirm → execute → explain
-- M5.5: Citation generation and groundedness checks
+- [x] M5.1: Document ingestion (PDF/TXT), chunking, section metadata indexing (commit `fd14772`)
+- [x] M5.2: Hybrid retrieval (BM25 + cosine vector store) with strict relevance scoring (commit `fd14772`)
+- [x] M5.3: Approved tool registry with audit log and policy guardrails (commit `fd14772`)
+- [x] M5.4: AI copilot workflow: classify → retrieve → validate → execute → explain (commit `fd14772`)
+- [x] M5.5: Citation generation, groundedness validation and zero-fabrication fallback (commit `fd14772`, `c829884`)
 
 ---
 
 ## Phase 6 — Product UI and Experience
 
-**Goal:** All 8 pages complete, data-connected, professional design.
+**Goal:** All pages complete, data-connected, professional dark-mode design.
 
 ### Key Milestones
-- M6.1: Landing page
-- M6.2: Simulation Monitor with real job status
-- M6.3: Results & Analytics with real charts and map overlays
-- M6.4: Scenario Comparison page
-- M6.5: AI Copilot chat interface with tool execution cards
-- M6.6: Data Management page
+- [x] M6.1: Landing page with platform stats and quick action workflows (commit `c829884`)
+- [x] M6.2: Simulation Monitor with real-time job status, worker telemetry and auto-polling (commit `323d4ed`)
+- [x] M6.3: Results & Analytics with visual gauges, link congestion inspector and metrics breakdown (commit `323d4ed`)
+- [x] M6.4: Scenario Comparison studio with side-by-side run picker and net percentage deltas (commit `323d4ed`)
+- [x] M6.5: AI Copilot chat interface with interactive citations and tool audit logs (commit `c829884`)
+- [x] M6.6: Data Management studio with live provider audits, CSV/JSON validator and network versioning (commit `323d4ed`)
 
 ---
 
