@@ -235,6 +235,43 @@ export interface WorkerStatus {
   broker_url: string;
 }
 
+// ── AI Copilot (Phase 5) ──────────────────────────────────────────────────────
+
+export interface CopilotChatRequest {
+  query: string;
+  city_id?: string;
+  max_results?: number;
+}
+
+export interface CopilotAuditEntry {
+  tool_name: string;
+  approved: boolean;
+  timestamp: string;
+  result_summary?: string;
+}
+
+export interface CopilotChatResponse {
+  query: string;
+  answer: string;
+  citations: string[];
+  data_label: "CITED_DOCUMENT" | "SIMULATED" | "UNCERTAIN" | "INSUFFICIENT_EVIDENCE" | string;
+  tools_used: string[];
+  confidence: number;
+  audit_log?: CopilotAuditEntry[];
+  processing_time_ms?: number;
+}
+
+export interface CopilotTool {
+  name: string;
+  description: string;
+  requires_auth: boolean;
+}
+
+export interface CopilotToolsResponse {
+  tools: CopilotTool[];
+  total: number;
+}
+
 // ── API Error ────────────────────────────────────────────────────────────────
 
 export interface ApiError {

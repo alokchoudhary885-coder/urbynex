@@ -26,6 +26,9 @@ import type {
   UserProfile,
   WorkerStatus,
   ApiError,
+  CopilotChatRequest,
+  CopilotChatResponse,
+  CopilotToolsResponse,
 } from "./types";
 
 const BASE_URL =
@@ -173,6 +176,13 @@ export const api = {
   // ── Worker Status ────────────────────────────────────────────────────────
 
   getWorkerStatus: (): Promise<WorkerStatus> => get("/worker/status"),
+
+  // ── AI Copilot (Phase 5) ──────────────────────────────────────────────────
+
+  copilotChat: (req: CopilotChatRequest): Promise<CopilotChatResponse> =>
+    post("/ai/chat", req),
+
+  copilotTools: (): Promise<CopilotToolsResponse> => get("/ai/tools"),
 
   // ── Health ────────────────────────────────────────────────────────────────
 

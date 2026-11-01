@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/scenarios", label: "Scenarios" },
   { href: "/simulations", label: "Simulations" },
   { href: "/compare", label: "Compare" },
+  { href: "/ai", label: "AI Copilot" },
 ];
 
 export function NavBar() {
