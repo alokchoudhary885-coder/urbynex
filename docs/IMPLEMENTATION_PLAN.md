@@ -32,14 +32,14 @@
 - [x] docs/PROJECT_VISION.md
 - [x] docs/ARCHITECTURE.md
 - [x] docs/IMPLEMENTATION_PLAN.md (this file)
-- [ ] docs/DATA_SOURCES.md
-- [ ] docs/SIMULATION_MODEL.md
-- [ ] docs/AI_AND_RAG.md
-- [ ] docs/API_CONTRACTS.md
-- [ ] docs/TESTING_STRATEGY.md
-- [ ] docs/KNOWN_LIMITATIONS.md
-- [ ] docs/DECISIONS.md
-- [ ] docs/IMPLEMENTATION_TASKS.json
+- [x] docs/DATA_SOURCES.md
+- [x] docs/SIMULATION_MODEL.md
+- [x] docs/AI_AND_RAG.md
+- [x] docs/API_CONTRACTS.md
+- [x] docs/TESTING_STRATEGY.md
+- [x] docs/KNOWN_LIMITATIONS.md
+- [x] docs/DECISIONS.md
+- [x] docs/IMPLEMENTATION_TASKS.json
 
 ---
 
