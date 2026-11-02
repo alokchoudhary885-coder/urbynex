@@ -57,91 +57,70 @@ export default function CommandCenterPage() {
       onCityChange={handleCityChange}
       cities={["Jaipur", "Delhi", "Bengaluru"]}
     >
-      {/* Three-column layout: Left Panel | Map | Right Panel */}
-      <div className="flex h-full w-full overflow-hidden" style={{ gap: "6px", padding: "6px" }}>
+      {/* Full-bleed 3D Digital Twin Viewport */}
+      <div className="relative h-full w-full overflow-hidden">
+        {/* Central MapLibre 3D Canvas occupies 100% of the screen */}
+        <div className="absolute inset-0 w-full h-full">
+          <CityMap
+            networkId={networkId}
+            initialCenter={center}
+            initialZoom={13.5}
+            colorMode="highway"
+            heightClass="h-full"
+          />
+        </div>
 
-        {/* ── Left Intelligence Panel ─────────────────── */}
+        {/* ── Left Floating Intelligence Panel ─────────────────── */}
         <div
-          className="flex-shrink-0 overflow-y-auto"
-          style={{ zIndex: 10 }}
+          className="absolute left-3 top-3 z-10 max-h-[calc(100%-24px)] overflow-y-auto pointer-events-auto"
+          style={{ width: "215px" }}
         >
           <TrafficOverviewPanel />
         </div>
 
-        {/* ── Central Map ────────────────────────────── */}
-        <div className="flex-1 relative overflow-hidden" style={{ borderRadius: "4px", border: "1px solid #1B3445" }}>
-          {/* Map fills this area */}
-          <CityMap
-            networkId={networkId}
-            initialCenter={center}
-            initialZoom={13}
-            colorMode="highway"
-            heightClass="h-full"
-          />
-
-          {/* City label overlay */}
-          <div
-            className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2.5 py-1.5 rounded"
-            style={{ background: "rgba(8,24,39,0.85)", border: "1px solid #1B3445", backdropFilter: "blur(4px)" }}
-          >
-            <span className="w-2 h-2 rounded-full" style={{ background: "#36C6A0", boxShadow: "0 0 6px #36C6A0" }} />
-            <span className="text-xs font-bold" style={{ color: "#EAF3F8" }}>{selectedCity} Digital Twin</span>
-            <span
-              className="text-[8px] font-mono px-1 py-0.5 rounded"
-              style={{ background: "rgba(0,184,217,0.15)", color: "#00B8D9", border: "1px solid rgba(0,184,217,0.3)" }}
-            >
-              v1 · LIVE
-            </span>
-          </div>
-
-          {/* Map legend overlay */}
-          <div
-            className="absolute bottom-3 right-3 z-10 flex flex-col gap-1 p-2 rounded"
-            style={{ background: "rgba(8,24,39,0.85)", border: "1px solid #1B3445", backdropFilter: "blur(4px)", fontSize: "9px" }}
-          >
-            <div className="font-bold mb-0.5" style={{ color: "#8DA5B5" }}>ROAD TYPE</div>
-            {[
-              { color: "#f59e0b", label: "Trunk / Expressway" },
-              { color: "#10b981", label: "Primary" },
-              { color: "#06b6d4", label: "Secondary" },
-              { color: "#3b82f6", label: "Tertiary" },
-              { color: "#64748b", label: "Residential" },
-            ].map((l) => (
-              <div key={l.label} className="flex items-center gap-1.5">
-                <div className="w-4 h-0.5 rounded-full" style={{ background: l.color }} />
-                <span style={{ color: "#8DA5B5" }}>{l.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick navigation buttons overlay */}
-          <div
-            className="absolute top-3 right-14 z-10 flex gap-1"
-          >
-            {(["Jaipur", "Delhi", "Bengaluru"] as const).map((city) => (
-              <button
-                key={city}
-                onClick={() => handleCityChange(city)}
-                className="px-2 py-1 rounded text-[9px] font-bold transition-all"
-                style={{
-                  background: selectedCity === city ? "rgba(0,184,217,0.25)" : "rgba(8,24,39,0.85)",
-                  border: `1px solid ${selectedCity === city ? "#00B8D9" : "#1B3445"}`,
-                  color: selectedCity === city ? "#00B8D9" : "#8DA5B5",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                {city}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* ── Right Intelligence Panel ────────────────── */}
+        {/* ── Right Floating Intelligence Panel ────────────────── */}
         <div
-          className="flex-shrink-0 overflow-y-auto"
-          style={{ zIndex: 10 }}
+          className="absolute right-3 top-3 z-10 max-h-[calc(100%-24px)] overflow-y-auto pointer-events-auto"
+          style={{ width: "215px" }}
         >
           <AIPanelRight />
+        </div>
+
+        {/* ── Center Top Floating City Switcher HUD ────────────── */}
+        <div
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 px-3 py-1.5 rounded"
+          style={{
+            background: "rgba(6,17,28,0.92)",
+            border: "1px solid rgba(0,184,217,0.4)",
+            backdropFilter: "blur(8px)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.8), 0 0 15px rgba(0,184,217,0.2)",
+          }}
+        >
+          <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#36C6A0", boxShadow: "0 0 8px #36C6A0" }} />
+          <span className="text-xs font-black tracking-wide" style={{ color: "#EAF3F8" }}>
+            {selectedCity.toUpperCase()} 3D DIGITAL TWIN
+          </span>
+          <span
+            className="text-[8px] font-mono font-bold px-1.5 py-0.5 rounded"
+            style={{ background: "rgba(0,184,217,0.18)", color: "#00B8D9", border: "1px solid rgba(0,184,217,0.3)" }}
+          >
+            v1.0 · OPERATIONAL
+          </span>
+          <div className="h-3.5 w-px mx-1" style={{ background: "#1B3445" }} />
+          {(["Jaipur", "Delhi", "Bengaluru"] as const).map((city) => (
+            <button
+              key={city}
+              onClick={() => handleCityChange(city)}
+              className="px-2 py-0.5 rounded text-[9px] font-bold transition-all"
+              style={{
+                background: selectedCity === city ? "rgba(0,184,217,0.3)" : "transparent",
+                border: selectedCity === city ? "1px solid #00B8D9" : "1px solid transparent",
+                color: selectedCity === city ? "#00B8D9" : "#8DA5B5",
+              }}
+            >
+              {city}
+            </button>
+          ))}
         </div>
       </div>
     </DashboardLayout>

@@ -134,12 +134,14 @@ export function TrafficOverviewPanel() {
     <div
       className="flex flex-col gap-2"
       style={{
-        width: "200px",
-        background: "#0B1D2B",
-        border: "1px solid #1B3445",
-        borderRadius: "4px",
+        width: "215px",
+        background: "rgba(8, 24, 39, 0.92)",
+        border: "1px solid rgba(0, 184, 217, 0.35)",
+        borderRadius: "6px",
         padding: "10px",
         fontSize: "11px",
+        backdropFilter: "blur(8px)",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 184, 217, 0.15)",
       }}
     >
       {/* Header */}

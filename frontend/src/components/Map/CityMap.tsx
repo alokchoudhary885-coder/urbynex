@@ -22,6 +22,7 @@ export interface SelectedEdge {
 }
 
 export type ColorMode = "highway" | "speed" | "capacity" | "congestion";
+export type BasemapMode = "satellite" | "streets" | "dark";
 
 interface CityMapProps {
   networkId: string;
@@ -35,39 +36,97 @@ interface CityMapProps {
   show3DBuildings?: boolean;
 }
 
-// Public Dark Matter Basemap (raster base)
-const CARTO_DARK_STYLE: StyleSpecification = {
+// ── 1. High-Resolution Esri World Imagery (No API key needed, zero watermark) ──
+const SATELLITE_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    "carto-dark": {
+    "satellite-tiles": {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       ],
       tileSize: 256,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      attribution: "&copy; Esri, Maxar, Earthstar Geographics",
+      maxzoom: 19,
     },
   },
   layers: [
     {
-      id: "carto-dark-base",
+      id: "satellite-base",
       type: "raster",
-      source: "carto-dark",
+      source: "satellite-tiles",
       minzoom: 0,
       maxzoom: 20,
     },
   ],
 };
 
-// Procedural 3D building generation around a centroid to deliver 3D digital twin buildings
-function generate3DBuildings(lng: number, lat: number, count: number = 48) {
-  const features = [];
-  const spread = 0.018; // ~2km radius
+// ── 2. OpenStreetMap Streets Style (No API key needed, zero watermark) ─────────
+const STREETS_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    "osm-tiles": {
+      type: "raster",
+      tiles: [
+        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      ],
+      tileSize: 256,
+      attribution: "&copy; OpenStreetMap contributors",
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: "streets-base",
+      type: "raster",
+      source: "osm-tiles",
+      minzoom: 0,
+      maxzoom: 20,
+    },
+  ],
+};
 
-  // Seeded deterministic pseudo-random for stability across renders
+// ── 3. Dark Night Digital Twin Style (Dark overlay over satellite) ─────────────
+const DARK_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {
+    "dark-tiles": {
+      type: "raster",
+      tiles: [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
+      attribution: "&copy; Esri, Maxar",
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: "dark-satellite-base",
+      type: "raster",
+      source: "dark-tiles",
+      minzoom: 0,
+      maxzoom: 20,
+      paint: {
+        "raster-opacity": 0.85,
+        "raster-brightness-max": 0.7,
+        "raster-contrast": 0.2,
+      },
+    },
+  ],
+};
+
+const BASEMAP_STYLES: Record<BasemapMode, StyleSpecification> = {
+  satellite: SATELLITE_STYLE,
+  streets: STREETS_STYLE,
+  dark: DARK_STYLE,
+};
+
+// Procedural 3D building generation around city centroid
+function generate3DBuildings(lng: number, lat: number, count: number = 72) {
+  const features = [];
+  const spread = 0.022; // ~2.5km radius
+
   let seed = Math.abs(Math.sin(lng * 100 + lat * 100) * 10000);
   const rand = () => {
     seed = (seed * 9301 + 49297) % 233280;
@@ -76,18 +135,21 @@ function generate3DBuildings(lng: number, lat: number, count: number = 48) {
 
   for (let i = 0; i < count; i++) {
     const dLng = (rand() - 0.5) * spread * 2;
-    const dLat = (rand() - 0.5) * spread * 1.5;
+    const dLat = (rand() - 0.5) * spread * 1.6;
     const centerLng = lng + dLng;
     const centerLat = lat + dLat;
 
     // Building footprint dimensions
-    const width = 0.0004 + rand() * 0.0006;
-    const height = 0.0003 + rand() * 0.0005;
+    const width = 0.00045 + rand() * 0.00075;
+    const height = 0.00035 + rand() * 0.00065;
 
     // 3D Extrusion height in meters (skyscrapers near center, mid-rise around)
     const distFromCenter = Math.sqrt(dLng * dLng + dLat * dLat);
-    const heightMultiplier = Math.max(0.2, 1 - distFromCenter / spread);
-    const buildingHeight = Math.round(20 + rand() * 120 * heightMultiplier + (i % 7 === 0 ? 80 : 0));
+    const heightMultiplier = Math.max(0.25, 1 - distFromCenter / spread);
+    const isIconicTower = i % 8 === 0;
+    const buildingHeight = Math.round(
+      25 + rand() * 110 * heightMultiplier + (isIconicTower ? 140 : 0)
+    );
 
     features.push({
       type: "Feature" as const,
@@ -95,7 +157,7 @@ function generate3DBuildings(lng: number, lat: number, count: number = 48) {
         id: `bldg-${i}`,
         height: buildingHeight,
         base_height: 0,
-        type: buildingHeight > 90 ? "tower" : "commercial",
+        type: buildingHeight > 120 ? "skyscraper" : buildingHeight > 60 ? "commercial" : "lowrise",
       },
       geometry: {
         type: "Polygon" as const,
@@ -152,7 +214,7 @@ const CITY_LANDMARKS: Record<string, Landmark[]> = {
 
 export function CityMap({
   networkId,
-  initialCenter = [75.7873, 26.9124], // [lng, lat]
+  initialCenter = [75.7873, 26.9124],
   initialZoom = 13.5,
   colorMode = "highway",
   selectedEdgeIds = [],
@@ -166,6 +228,7 @@ export function CityMap({
   const popupRef = useRef<Popup | null>(null);
   const markersRef = useRef<Marker[]>([]);
 
+  const [basemapMode, setBasemapMode] = useState<BasemapMode>("satellite");
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [featureCount, setFeatureCount] = useState<number>(0);
@@ -191,35 +254,35 @@ export function CityMap({
         return [
           "step",
           ["coalesce", ["get", "speed_kmh"], 35],
-          "#EF5350", // Congested (< 25 km/h): Red
+          "#FF1744", // Heavy congestion (< 25 km/h): Neon Crimson
           25,
-          "#F5A623", // Moderate (25-45 km/h): Amber
+          "#FFD600", // Moderate (25-45 km/h): Neon Amber
           45,
-          "#36C6A0", // Free flow (> 45 km/h): Teal
+          "#00E676", // Free flow (> 45 km/h): Neon Green
         ];
       case "speed":
         return [
           "step",
           ["coalesce", ["get", "speed_kmh"], 40],
-          "#00B8D9", // < 30 km/h: cyan
+          "#00E5FF", // < 30 km/h: Cyan
           30,
-          "#36C6A0", // 30-50 km/h: emerald
+          "#00E676", // 30-50 km/h: Emerald
           50,
-          "#F5A623", // 50-65 km/h: amber
+          "#FFD600", // 50-65 km/h: Amber
           65,
-          "#EF5350", // >= 65 km/h: red
+          "#FF1744", // >= 65 km/h: Red
         ];
       case "capacity":
         return [
           "step",
           ["coalesce", ["get", "capacity"], 1800],
-          "#64748B", // <= 1800: slate
+          "#90A4AE", // <= 1800: Slate
           1801,
-          "#00B8D9", // 1801-3600: cyan
+          "#00E5FF", // 1801-3600: Cyan
           3601,
-          "#3B82F6", // 3601-5400: blue
+          "#2979FF", // 3601-5400: Blue
           5401,
-          "#8B5CF6", // > 5400: purple
+          "#D500F9", // > 5400: Purple
         ];
       case "highway":
       default:
@@ -227,16 +290,16 @@ export function CityMap({
           "match",
           ["get", "highway"],
           ["trunk", "trunk_link", "motorway", "motorway_link"],
-          "#F5A623", // Amber / Expressway
+          "#FF9100", // Bright Orange / Expressway
           ["primary", "primary_link"],
-          "#00B8D9", // Cyan / Primary Arterial
+          "#00E5FF", // Vibrant Neon Cyan / Primary Arterial
           ["secondary", "secondary_link"],
-          "#36C6A0", // Teal / Secondary
+          "#00E676", // Emerald / Secondary
           ["tertiary", "tertiary_link"],
-          "#3B82F6", // Blue / Tertiary
+          "#2979FF", // Blue / Tertiary
           ["residential", "living_street"],
-          "#475569", // Slate / Residential
-          "#64748B", // Default
+          "#78909C", // Slate / Residential
+          "#90A4AE", // Default
         ];
     }
   }, []);
@@ -248,6 +311,9 @@ export function CityMap({
     if (map.getLayer("network-roads-line")) {
       map.setPaintProperty("network-roads-line", "line-color", getLineColorExpression(colorMode));
     }
+    if (map.getLayer("network-roads-glow")) {
+      map.setPaintProperty("network-roads-glow", "line-color", getLineColorExpression(colorMode));
+    }
   }, [colorMode, getLineColorExpression]);
 
   // Toggle 3D pitch/bearing
@@ -258,26 +324,32 @@ export function CityMap({
       map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
       setIs3DMode(false);
     } else {
-      map.easeTo({ pitch: 52, bearing: -15, duration: 1000 });
+      map.easeTo({ pitch: 54, bearing: -18, duration: 1000 });
       setIs3DMode(true);
     }
   }, [is3DMode]);
+
+  // Switch basemap style
+  const handleBasemapChange = (mode: BasemapMode) => {
+    setBasemapMode(mode);
+    if (!mapRef.current) return;
+    mapRef.current.setStyle(BASEMAP_STYLES[mode]);
+  };
 
   // Initialize MapLibre
   useEffect(() => {
     if (!mapContainer.current) return;
 
-    // Clear existing markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
     const map = new MapLibreMap({
       container: mapContainer.current,
-      style: CARTO_DARK_STYLE,
+      style: BASEMAP_STYLES[basemapMode],
       center: initialCenter,
       zoom: initialZoom,
-      pitch: 52, // Command Center oblique 3D perspective
-      bearing: -15, // Angled city view like Dubai digital twin
+      pitch: 54, // Oblique 3D perspective matching Dubai Digital Twin
+      bearing: -18,
       attributionControl: { compact: true },
     });
 
@@ -285,12 +357,12 @@ export function CityMap({
     map.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
     map.addControl(new ScaleControl({ unit: "metric" }), "bottom-left");
 
-    map.on("load", async () => {
+    const setupLayers = async () => {
       try {
         setLoading(true);
         setLoadError(null);
 
-        // ── 1. Fetch network GeoJSON from backend API ──────────────────────────
+        // Fetch network GeoJSON from backend API
         const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
         const res = await fetch(`${apiUrl}/api/networks/${networkId}/geojson`);
         if (!res.ok) {
@@ -300,7 +372,6 @@ export function CityMap({
         const count = geojsonData.features?.length || 0;
         setFeatureCount(count);
 
-        // Compute centroid for 3D building generation
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         if (geojsonData.bbox && geojsonData.bbox.length === 4) {
           [minX, minY, maxX, maxY] = geojsonData.bbox;
@@ -320,9 +391,9 @@ export function CityMap({
         const centerLng = minX !== Infinity ? (minX + maxX) / 2 : initialCenter[0];
         const centerLat = minY !== Infinity ? (minY + maxY) / 2 : initialCenter[1];
 
-        // ── 2. Add 3D Extruded Buildings Layer ─────────────────────────────────
+        // ── 1. 3D Extruded Buildings Layer ────────────────────────────────────
         if (show3DBuildings && !map.getSource("urban-3d-buildings")) {
-          const buildingsData = generate3DBuildings(centerLng, centerLat, 54);
+          const buildingsData = generate3DBuildings(centerLng, centerLat, 72);
           map.addSource("urban-3d-buildings", {
             type: "geojson",
             data: buildingsData,
@@ -337,27 +408,28 @@ export function CityMap({
                 "interpolate",
                 ["linear"],
                 ["get", "height"],
-                20, "#081827",
-                50, "#0B1D2B",
-                80, "#103247",
-                120, "#164560",
-                160, "#00B8D9",
+                25, "#1B3A4B",
+                60, "#006680",
+                100, "#00B8D9",
+                160, "#36C6A0",
+                220, "#E0F7FA",
               ],
               "fill-extrusion-height": ["get", "height"],
               "fill-extrusion-base": ["get", "base_height"],
-              "fill-extrusion-opacity": 0.82,
+              "fill-extrusion-opacity": 0.88,
+              "fill-extrusion-vertical-gradient": true,
             },
           });
         }
 
-        // ── 3. Road Network Casing & Glow Layers ────────────────────────────────
+        // ── 2. Road Network Layers (Casing + Glow + Line) ──────────────────────
         if (!map.getSource("network-roads")) {
           map.addSource("network-roads", {
             type: "geojson",
             data: geojsonData,
           });
 
-          // Casing / Shadow Layer
+          // Casing Layer (dark shadow under roads)
           map.addLayer({
             id: "network-roads-casing",
             type: "line",
@@ -367,20 +439,20 @@ export function CityMap({
               "line-join": "round",
             },
             paint: {
-              "line-color": "#030B14",
+              "line-color": "#020617",
               "line-width": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
-                11, 2,
-                14, 4.5,
-                17, 9,
+                11, 2.5,
+                14, 5.5,
+                17, 11,
               ],
-              "line-opacity": 0.9,
+              "line-opacity": 0.95,
             },
           });
 
-          // Ambient Glow Layer (creates command center neon highway effect)
+          // Glowing Corridor Layer (creates the iconic neon highway bloom)
           map.addLayer({
             id: "network-roads-glow",
             type: "line",
@@ -395,16 +467,16 @@ export function CityMap({
                 "interpolate",
                 ["linear"],
                 ["zoom"],
-                11, 3,
-                14, 6,
-                17, 12,
+                11, 4,
+                14, 8,
+                17, 16,
               ],
-              "line-opacity": 0.35,
-              "line-blur": 2,
+              "line-opacity": 0.55,
+              "line-blur": 3,
             },
           });
 
-          // Main Sharp Road Layer
+          // Core Crisp Road Line
           map.addLayer({
             id: "network-roads-line",
             type: "line",
@@ -419,15 +491,15 @@ export function CityMap({
                 "interpolate",
                 ["linear"],
                 ["zoom"],
-                11, 1.4,
-                14, 2.8,
-                17, 5.5,
+                11, 1.8,
+                14, 3.5,
+                17, 7,
               ],
-              "line-opacity": 0.95,
+              "line-opacity": 1.0,
             },
           });
 
-          // Highlighted / Selected Edges Layer (Bright Coral/Red for interventions)
+          // Highlighted Interventions Layer
           map.addLayer({
             id: "network-roads-selected",
             type: "line",
@@ -442,32 +514,32 @@ export function CityMap({
               "line-join": "round",
             },
             paint: {
-              "line-color": "#EF5350",
+              "line-color": "#FF1744",
               "line-width": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
-                11, 3.5,
-                14, 7,
-                17, 12,
+                11, 4,
+                14, 8,
+                17, 14,
               ],
               "line-opacity": 1.0,
             },
           });
 
-          // Fit bounds to network
+          // Fit bounds
           if (minX !== Infinity) {
             map.fitBounds(
               [
                 [minX, minY],
                 [maxX, maxY],
               ],
-              { padding: 50, maxZoom: 15.5, pitch: 52, bearing: -15 }
+              { padding: 50, maxZoom: 15.5, pitch: 54, bearing: -18 }
             );
           }
         }
 
-        // ── 4. Add Landmark Callout Markers ─────────────────────────────────────
+        // ── 3. Landmark Callout Pins ───────────────────────────────────────────
         const landmarks = CITY_LANDMARKS[networkId] || CITY_LANDMARKS["jaipur_v1"] || [];
         landmarks.forEach((lm) => {
           const el = document.createElement("div");
@@ -476,19 +548,19 @@ export function CityMap({
             <div style="
               display: flex;
               align-items: center;
-              gap: 4px;
-              background: rgba(8, 24, 39, 0.92);
-              border: 1px solid #1B3445;
-              border-radius: 3px;
-              padding: 2px 6px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.6);
-              backdrop-filter: blur(4px);
-              transition: all 0.2s ease;
+              gap: 5px;
+              background: rgba(6, 17, 28, 0.94);
+              border: 1px solid #00B8D9;
+              border-radius: 4px;
+              padding: 3px 7px;
+              box-shadow: 0 4px 16px rgba(0,0,0,0.8), 0 0 10px rgba(0,184,217,0.3);
+              backdrop-filter: blur(6px);
+              transition: transform 0.15s ease;
             ">
-              <span style="font-size: 10px;">${lm.icon}</span>
+              <span style="font-size: 11px;">${lm.icon}</span>
               <div style="display: flex; flex-direction: column;">
                 <span style="font-size: 8.5px; font-weight: 800; color: #EAF3F8; letter-spacing: 0.05em; white-space: nowrap;">${lm.name}</span>
-                <span style="font-size: 7px; color: #00B8D9; font-weight: 600;">${lm.category}</span>
+                <span style="font-size: 7px; color: #36C6A0; font-weight: 600;">${lm.category}</span>
               </div>
             </div>
           `;
@@ -500,7 +572,7 @@ export function CityMap({
           markersRef.current.push(marker);
         });
 
-        // ── 5. Hover and Click Interactions ─────────────────────────────────────
+        // ── 4. Edge Interaction Listeners ──────────────────────────────────────
         map.on("mousemove", "network-roads-line", (e) => {
           if (!e.features || e.features.length === 0) return;
           map.getCanvas().style.cursor = "pointer";
@@ -572,7 +644,7 @@ export function CityMap({
                 <div>Capacity: <b>${edge.capacity} veh/h</b></div>
                 <div>Length: <b>${edge.length_m.toFixed(1)} m</b></div>
               </div>
-              <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid #1B3445; font-size: 10px; color: ${isSelected ? '#EF5350' : '#36C6A0'}; font-weight: 600;">
+              <div style="margin-top: 6px; padding-top: 4px; border-top: 1px solid #1B3445; font-size: 10px; color: ${isSelected ? '#FF1744' : '#36C6A0'}; font-weight: 600;">
                 ${isSelected ? '● Targeted for Scenario Intervention' : '○ Click to toggle closure / incident'}
               </div>
             </div>
@@ -592,6 +664,14 @@ export function CityMap({
         setLoadError(err instanceof Error ? err.message : "Failed to load map data");
         setLoading(false);
       }
+    };
+
+    map.on("load", setupLayers);
+    // When style changes, re-setup layers
+    map.on("style.load", () => {
+      if (map.isStyleLoaded()) {
+        setupLayers();
+      }
     });
 
     return () => {
@@ -601,7 +681,7 @@ export function CityMap({
       map.remove();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [networkId]);
+  }, [networkId, basemapMode]);
 
   return (
     <div className={`relative w-full ${heightClass} overflow-hidden`} style={{ background: "#06111C" }}>
@@ -616,7 +696,7 @@ export function CityMap({
         >
           <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "#00B8D9", borderTopColor: "transparent" }} />
           <p className="text-xs font-semibold" style={{ color: "#EAF3F8" }}>Rendering 3D Digital Twin Network…</p>
-          <span className="text-[10px] font-mono" style={{ color: "#8DA5B5" }}>{networkId} · MapLibre GL 3D Engine</span>
+          <span className="text-[10px] font-mono" style={{ color: "#8DA5B5" }}>{networkId} · Satellite 3D Engine</span>
         </div>
       )}
 
@@ -630,8 +710,36 @@ export function CityMap({
         </div>
       )}
 
-      {/* 2D / 3D Perspective Toggle Button */}
+      {/* ── Basemap Style Switcher & 3D Controls ───────────────────────────────── */}
       <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5">
+        {/* Basemap switcher */}
+        <div
+          className="flex items-center gap-0.5 p-0.5 rounded"
+          style={{ background: "rgba(6,17,28,0.92)", border: "1px solid #1B3445", backdropFilter: "blur(6px)" }}
+        >
+          {(
+            [
+              { id: "satellite", label: "🛰 Satellite" },
+              { id: "streets",   label: "🏙 Streets"   },
+              { id: "dark",      label: "🌑 Night"     },
+            ] as const
+          ).map((b) => (
+            <button
+              key={b.id}
+              onClick={() => handleBasemapChange(b.id)}
+              className="px-2 py-0.5 rounded text-[9px] font-bold transition-all"
+              style={{
+                background: basemapMode === b.id ? "rgba(0,184,217,0.25)" : "transparent",
+                color: basemapMode === b.id ? "#00B8D9" : "#8DA5B5",
+                border: basemapMode === b.id ? "1px solid rgba(0,184,217,0.5)" : "1px solid transparent",
+              }}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 2D / 3D Perspective Toggle Button */}
         <button
           onClick={toggle3D}
           className="px-2.5 py-1 rounded text-[10px] font-bold tracking-wide transition-all"
@@ -660,7 +768,7 @@ export function CityMap({
       {selectedEdgeIds.length > 0 && (
         <div
           className="absolute top-12 left-3 z-20 flex items-center gap-2 px-2.5 py-1 rounded text-[10px]"
-          style={{ background: "rgba(239,83,80,0.18)", border: "1px solid #EF5350", color: "#EF5350", backdropFilter: "blur(4px)" }}
+          style={{ background: "rgba(255,23,68,0.2)", border: "1px solid #FF1744", color: "#FF1744", backdropFilter: "blur(4px)" }}
         >
           <span>{selectedEdgeIds.length} segment(s) targeted for intervention</span>
         </div>
@@ -669,13 +777,13 @@ export function CityMap({
       {/* Hover Edge Inspector Pill */}
       {hoveredEdge && (
         <div
-          className="absolute bottom-10 left-3 right-3 sm:left-auto sm:right-3 sm:w-72 z-20 rounded p-2.5 text-xs transition-all"
+          className="absolute bottom-12 left-3 right-3 sm:left-auto sm:right-3 sm:w-72 z-20 rounded p-2.5 text-xs transition-all"
           style={{
             background: "rgba(11,29,43,0.95)",
-            border: "1px solid #1B3445",
+            border: "1px solid #00B8D9",
             color: "#EAF3F8",
             backdropFilter: "blur(6px)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.8)",
           }}
         >
           <div className="flex items-center justify-between mb-1">
@@ -684,7 +792,7 @@ export function CityMap({
             </span>
             <span
               className="px-1.5 py-0.5 text-[8px] uppercase font-bold rounded"
-              style={{ background: "rgba(54,198,160,0.15)", color: "#36C6A0" }}
+              style={{ background: "rgba(54,198,160,0.2)", color: "#36C6A0" }}
             >
               {hoveredEdge.highway}
             </span>
