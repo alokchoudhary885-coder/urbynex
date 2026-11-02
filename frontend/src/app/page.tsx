@@ -1,10 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { CityMap } from "@/components/Map/CityMap";
 import { TrafficOverviewPanel } from "@/components/panels/TrafficOverviewPanel";
 import { AIPanelRight } from "@/components/panels/AIPanelRight";
+
+// Dynamic import with SSR disabled to guarantee smooth WebGL MapLibre rendering
+const CityMap = dynamic(
+  () => import("@/components/Map/CityMap").then((m) => m.CityMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full flex flex-col items-center justify-center bg-[#06111C] text-[#8DA5B5] gap-3">
+        <div className="w-8 h-8 border-2 border-[#00B8D9] border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-mono">Initializing MapLibre 3D Digital Twin...</span>
+      </div>
+    ),
+  }
+);
 
 /**
  * page.tsx — Urbynex Smart City Command Center Dashboard

@@ -9,8 +9,15 @@ import Link from "next/link";
  * Real data from backend where available; honest unavailable state otherwise.
  */
 
+interface ProviderStatus {
+  provider_name?: string;
+  status?: string;
+  is_live?: boolean;
+}
+
 interface DataStatus {
-  providers?: Record<string, { status: string }>;
+  providers?: ProviderStatus[] | Record<string, { status?: string; is_live?: boolean }>;
+  any_live?: boolean;
 }
 
 interface NetworkMeta {
@@ -23,6 +30,11 @@ interface SimRun {
   id: string;
   status: string;
   network_id?: string;
+}
+
+interface SimRunResponse {
+  runs?: SimRun[];
+  total?: number;
 }
 
 function StatusDot({ live }: { live: boolean }) {
@@ -47,25 +59,42 @@ export function BottomAnalytics({ networkId = "jaipur_v1" }: { networkId?: strin
       fetch(`${API}/api/networks/${networkId}/geojson`).then((r) => r.json()),
       fetch(`${API}/api/simulations?limit=10`).then((r) => r.json()),
     ]).then(([statusRes, geoRes, simsRes]) => {
-      if (statusRes.status === "fulfilled") setDataStatus(statusRes.value as DataStatus);
-      if (geoRes.status === "fulfilled") {
+      if (statusRes.status === "fulfilled" && statusRes.value) {
+        setDataStatus(statusRes.value as DataStatus);
+      }
+      if (geoRes.status === "fulfilled" && geoRes.value) {
         const geo = geoRes.value as { features?: unknown[] };
         const featureCount = geo.features?.length ?? 0;
         setNetMeta({ edge_count: featureCount, node_count: Math.round(featureCount * 0.48) });
       }
-      if (simsRes.status === "fulfilled") setRecentRuns(simsRes.value as SimRun[]);
+      if (simsRes.status === "fulfilled" && simsRes.value) {
+        const val = simsRes.value as SimRun[] | SimRunResponse;
+        const runs = Array.isArray(val) ? val : Array.isArray(val?.runs) ? val.runs : [];
+        setRecentRuns(runs);
+      }
       setLoading(false);
     });
   }, [networkId]);
 
-  const isLive = dataStatus?.providers
-    ? Object.values(dataStatus.providers).some((p) => p.status === "live")
-    : false;
+  const isLive = Boolean(
+    dataStatus?.any_live ||
+    (Array.isArray(dataStatus?.providers)
+      ? dataStatus.providers.some((p) => p.is_live || p.status === "live")
+      : dataStatus?.providers && typeof dataStatus.providers === "object"
+      ? Object.values(dataStatus.providers).some((p) => p.is_live || p.status === "live")
+      : false)
+  );
 
-  const failedRuns = recentRuns.filter(
-    (r) => r.status === "failed" || r.status === "cancelled"
+  const providerCount = Array.isArray(dataStatus?.providers)
+    ? dataStatus.providers.length
+    : dataStatus?.providers && typeof dataStatus.providers === "object"
+    ? Object.keys(dataStatus.providers).length
+    : 0;
+
+  const failedRuns = (recentRuns || []).filter(
+    (r) => r && (r.status === "failed" || r.status === "cancelled")
   ).length;
-  const completedRuns = recentRuns.filter((r) => r.status === "completed").length;
+  const completedRuns = (recentRuns || []).filter((r) => r && r.status === "completed").length;
 
   return (
     <div
@@ -91,7 +120,7 @@ export function BottomAnalytics({ networkId = "jaipur_v1" }: { networkId?: strin
           </span>
         </div>
         <p className="text-[8px]" style={{ color: "#8DA5B5" }}>
-          {loading ? "Connecting to data providers…" : `${Object.keys(dataStatus?.providers ?? {}).length} providers registered`}
+          {loading ? "Connecting to data providers…" : `${providerCount} providers registered`}
         </p>
         <div className="mt-1 h-0.5 rounded-full" style={{ background: "#1B3445" }}>
           <div className="h-0.5 rounded-full" style={{ width: isLive ? "100%" : "0%", background: "#36C6A0" }} />

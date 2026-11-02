@@ -1,10 +1,24 @@
 "use client";
 
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCities, useCityNetworks } from "@/lib/hooks/useApi";
-import { CityMap, type ColorMode, type SelectedEdge } from "@/components/Map/CityMap";
+import type { ColorMode, SelectedEdge } from "@/components/Map/CityMap";
 import { NetworkLayerControls } from "@/components/Map/NetworkLayerControls";
+
+const CityMap = dynamic(
+  () => import("@/components/Map/CityMap").then((m) => m.CityMap),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[650px] w-full flex flex-col items-center justify-center bg-gray-950 text-gray-400 gap-3 rounded-2xl border border-gray-800">
+        <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-mono">Loading MapLibre Digital Twin...</span>
+      </div>
+    ),
+  }
+);
 
 export default function CitiesPage() {
   const { data: citiesData, loading: citiesLoading, error: citiesError } = useCities();

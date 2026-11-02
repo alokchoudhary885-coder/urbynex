@@ -74,7 +74,10 @@ export function AIPanelRight() {
     const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
     fetch(`${API}/api/simulations?limit=1`)
       .then((r) => r.json())
-      .then((data: SimRun[]) => { if (data?.length) setLatestRun(data[0]); })
+      .then((data: SimRun[] | { runs?: SimRun[] }) => {
+        const runs = Array.isArray(data) ? data : data?.runs || [];
+        if (runs.length > 0) setLatestRun(runs[0]);
+      })
       .catch(() => {});
   }, []);
 
