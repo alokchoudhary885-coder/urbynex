@@ -1,19 +1,82 @@
 @import "tailwindcss";
 @import "maplibre-gl/dist/maplibre-gl.css";
 
+/* ── Urbynex Command Center Design System ─────────────────────────── */
 :root {
-  --background: #030712;
-  --foreground: #f9fafb;
+  --cmd-bg:       #06111C;
+  --cmd-sidebar:  #081827;
+  --cmd-panel:    #0B1D2B;
+  --cmd-border:   #1B3445;
+  --cmd-cyan:     #00B8D9;
+  --cmd-teal:     #36C6A0;
+  --cmd-amber:    #F5A623;
+  --cmd-red:      #EF5350;
+  --cmd-text:     #EAF3F8;
+  --cmd-muted:    #8DA5B5;
+
+  --background: var(--cmd-bg);
+  --foreground: var(--cmd-text);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background:   var(--cmd-bg);
+  --color-foreground:   var(--cmd-text);
+  --color-cmd-bg:       #06111C;
+  --color-cmd-sidebar:  #081827;
+  --color-cmd-panel:    #0B1D2B;
+  --color-cmd-border:   #1B3445;
+  --color-cmd-cyan:     #00B8D9;
+  --color-cmd-teal:     #36C6A0;
+  --color-cmd-amber:    #F5A623;
+  --color-cmd-red:      #EF5350;
+  --color-cmd-text:     #EAF3F8;
+  --color-cmd-muted:    #8DA5B5;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--cmd-bg);
+  color: var(--cmd-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   overflow-x: hidden;
 }
+
+/* ── Scrollbar styling ────────────────────────────────────────────── */
+* { scrollbar-width: thin; scrollbar-color: #1B3445 transparent; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1B3445; border-radius: 2px; }
+
+/* ── Maplibre popup dark theme ───────────────────────────────────── */
+.maplibregl-popup-content {
+  background: #0B1D2B !important;
+  border: 1px solid #1B3445 !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.7) !important;
+  color: #EAF3F8 !important;
+  font-size: 11px !important;
+}
+.maplibregl-popup-tip { border-top-color: #1B3445 !important; }
+.maplibregl-popup-close-button { color: #8DA5B5 !important; }
+
+/* ── Panel card base ─────────────────────────────────────────────── */
+.cmd-card {
+  background: #0B1D2B;
+  border: 1px solid #1B3445;
+  border-radius: 4px;
+}
+
+/* ── Subtle pulse ring animation ─────────────────────────────────── */
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-pulse-slow { animation: pulse-ring 2.5s ease-in-out infinite; }
+
+/* ── Sparkline chart bar animation ──────────────────────────────── */
+@keyframes bar-grow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.bar-animate { transform-origin: bottom; animation: bar-grow 0.6s ease-out forwards; }
+

@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { NavBar } from "@/components/NavBar";
 
+/**
+ * Root layout — Urbynex Smart City Digital Twin
+ *
+ * The main dashboard page (/) uses DashboardLayout (Sidebar + TopNav + BottomAnalytics).
+ * Other pages (/simulations, /compare, /ai, /scenarios, /data, /cities) use their own layout
+ * with the legacy NavBar still available if imported directly.
+ */
 export const metadata: Metadata = {
   title: "Urbynex — Smart City Digital Twin",
   description:
@@ -15,9 +21,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="antialiased h-full bg-gray-950 text-gray-100 font-sans">
-        <NavBar />
-        <main className="min-h-[calc(100vh-64px)]">{children}</main>
+      <body
+        className="antialiased h-full"
+        style={{ background: "#06111C", color: "#EAF3F8" }}
+      >
+        {children}
       </body>
     </html>
   );
