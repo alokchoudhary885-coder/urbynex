@@ -1,0 +1,55 @@
+{
+  "network_id": "bengaluru_v1",
+  "city_id": "bengaluru",
+  "city_name": "Bengaluru",
+  "corridor": "Silk Board - Outer Ring Road - HSR Corridor",
+  "version": "v1",
+  "source": "OpenStreetMap contributors",
+  "license": "Open Database License (ODbL) 1.0",
+  "attribution": "\u00a9 OpenStreetMap contributors",
+  "bbox": {
+    "south": 12.905,
+    "west": 77.61,
+    "north": 12.93,
+    "east": 77.64
+  },
+  "node_count": 5418,
+  "edge_count": 11372,
+  "total_road_length_km": 448.85,
+  "is_strongly_connected": true,
+  "scc_coverage_pct": 100.0,
+  "validation_status": "passed",
+  "sha256_hash": "fe72c3c41d98ecaf",
+  "files": {
+    "graphml": "network.graphml",
+    "graphml_size_kb": 7808,
+    "geojson": "network.geojson",
+    "geojson_size_kb": 6402
+  },
+  "assumptions": {
+    "total_edges": 11372,
+    "speed_assumed_count": 10056,
+    "speed_assumed_pct": 88.4,
+    "lanes_assumed_count": 9241,
+    "lanes_assumed_pct": 81.3,
+    "capacity_model": "lanes * 1800 veh/hr/lane",
+    "default_speeds": {
+      "motorway": 60.0,
+      "motorway_link": 40.0,
+      "trunk": 50.0,
+      "trunk_link": 35.0,
+      "primary": 50.0,
+      "primary_link": 35.0,
+      "secondary": 40.0,
+      "secondary_link": 30.0,
+      "tertiary": 35.0,
+      "tertiary_link": 25.0,
+      "residential": 30.0,
+      "unclassified": 30.0,
+      "living_street": 20.0
+    },
+    "note": "Documented urban Indian road class speeds applied where maxspeed tag is absent."
+  },
+  "imported_at": "2026-11-02T14:16:05.788383+00:00",
+  "simulation_ready": true
+}
