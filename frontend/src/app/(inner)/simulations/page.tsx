@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * frontend/src/app/simulations/page.tsx
+ * frontend/src/app/(inner)/simulations/page.tsx
  *
- * M6.2 & M6.3: Production Simulation Monitor & Analytics
- * - Real-time job queue & worker status (Celery/BackgroundTask)
- * - Auto-refreshing list of recent simulation runs
- * - Detailed metric inspector with visual bar indicators & edge breakdown
+ * Command Center Simulation Monitor & Analytics
+ * - Real-time job queue & worker telemetry (Celery/BackgroundTask)
+ * - Auto-refreshing list of simulation runs with multi-city filter
+ * - Detailed metric inspector with visual gauges & corridor breakdown
  * - Quick action links to compare runs
  */
 
@@ -63,29 +63,22 @@ const METRIC_CONFIG: Record<
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: RunStatus }) {
-  const styles: Record<RunStatus, string> = {
-    completed: "bg-emerald-950 text-emerald-400 border-emerald-800",
-    running: "bg-blue-950 text-blue-400 border-blue-800 animate-pulse",
-    queued: "bg-amber-950 text-amber-400 border-amber-800",
-    failed: "bg-red-950 text-red-400 border-red-800",
-    cancelled: "bg-gray-800 text-gray-400 border-gray-700",
+  const styles: Record<RunStatus, { bg: string; text: string; border: string; dot: string }> = {
+    completed: { bg: "rgba(54,198,160,0.12)", text: "#36C6A0", border: "rgba(54,198,160,0.3)", dot: "#36C6A0" },
+    running: { bg: "rgba(0,184,217,0.12)", text: "#00B8D9", border: "rgba(0,184,217,0.3)", dot: "#00B8D9" },
+    queued: { bg: "rgba(245,166,35,0.12)", text: "#F5A623", border: "rgba(245,166,35,0.3)", dot: "#F5A623" },
+    failed: { bg: "rgba(239,83,80,0.12)", text: "#EF5350", border: "rgba(239,83,80,0.3)", dot: "#EF5350" },
+    cancelled: { bg: "rgba(141,165,181,0.12)", text: "#8DA5B5", border: "rgba(141,165,181,0.3)", dot: "#8DA5B5" },
   };
+  const s = styles[status] ?? styles.queued;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium border ${
-        styles[status] ?? styles.queued
-      }`}
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-mono font-medium"
+      style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}
     >
       <span
-        className={`w-1.5 h-1.5 rounded-full ${
-          status === "completed"
-            ? "bg-emerald-400"
-            : status === "running"
-            ? "bg-blue-400"
-            : status === "failed"
-            ? "bg-red-400"
-            : "bg-amber-400"
-        }`}
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: s.dot }}
       />
       {status.toUpperCase()}
     </span>
@@ -104,12 +97,13 @@ export default function SimulationsPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [manualInput, setManualInput] = useState("");
+  const [cityFilter, setCityFilter] = useState<string>("all");
 
   // Fetch runs list and worker status
   const refreshData = useCallback(async () => {
     try {
       const [runsRes, workerRes] = await Promise.allSettled([
-        api.listSimulations(20),
+        api.listSimulations(30),
         api.getWorkerStatus(),
       ]);
 
@@ -163,167 +157,225 @@ export default function SimulationsPage() {
     }
   }
 
+  const filteredRuns = runs.filter((r) => {
+    if (cityFilter === "all") return true;
+    return r.network_id.toLowerCase().includes(cityFilter.toLowerCase());
+  });
+
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 space-y-8">
+    <div
+      className="min-h-screen px-6 py-6 space-y-6"
+      style={{ background: "#06111C", color: "#EAF3F8" }}
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4" style={{ borderBottom: "1px solid #1B3445" }}>
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <span>⚡</span> Simulation Monitor &amp; Analytics
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono uppercase px-2 py-0.5 rounded" style={{ background: "rgba(0,184,217,0.12)", color: "#00B8D9", border: "1px solid rgba(0,184,217,0.3)" }}>
+              DIGITAL TWIN TELEMETRY
+            </span>
+          </div>
+          <h1 className="text-xl font-bold tracking-tight text-white mt-1 flex items-center gap-2">
+            <span style={{ color: "#00B8D9" }}>⚡</span> Simulation Monitor &amp; Batch Analytics
           </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Real-time execution queue, BPR/Webster telemetry, and link-level
-            congestion analytics.
+          <p className="text-xs mt-0.5" style={{ color: "#8DA5B5" }}>
+            Real-time execution queue, BPR/Webster convergence, and link-level congestion telemetry.
           </p>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-3 py-1.5 rounded-lg border text-xs font-mono transition-colors flex items-center gap-2 ${
-              autoRefresh
-                ? "bg-emerald-950 border-emerald-800 text-emerald-400"
-                : "bg-gray-900 border-gray-800 text-gray-500"
-            }`}
+            className="px-3 py-1.5 rounded text-xs font-mono transition-all flex items-center gap-2"
+            style={{
+              background: autoRefresh ? "rgba(54,198,160,0.15)" : "#0B1D2B",
+              border: `1px solid ${autoRefresh ? "#36C6A0" : "#1B3445"}`,
+              color: autoRefresh ? "#36C6A0" : "#8DA5B5",
+            }}
           >
             <span
-              className={`w-2 h-2 rounded-full ${
-                autoRefresh ? "bg-emerald-400 animate-ping" : "bg-gray-600"
-              }`}
+              className={`w-2 h-2 rounded-full ${autoRefresh ? "animate-ping" : ""}`}
+              style={{ background: autoRefresh ? "#36C6A0" : "#8DA5B5" }}
             />
-            {autoRefresh ? "Live polling ON" : "Polling paused"}
+            {autoRefresh ? "Live Polling ON" : "Polling Paused"}
           </button>
           <button
             onClick={() => refreshData()}
-            className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 text-white text-xs font-medium rounded-lg border border-gray-700 transition-colors"
+            className="px-3 py-1.5 text-xs font-mono rounded transition-colors"
+            style={{
+              background: "#0B1D2B",
+              border: "1px solid #1B3445",
+              color: "#00B8D9",
+            }}
           >
-            ↻ Refresh Now
+            ↻ Refresh
           </button>
         </div>
       </div>
 
       {/* Worker Queue Status Banner */}
       {worker && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-900 border border-gray-800 rounded-2xl p-5">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg"
+          style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+        >
           <div>
-            <p className="text-xs text-gray-500">Dispatch Architecture</p>
-            <p className="text-sm font-semibold text-white mt-1 capitalize font-mono">
+            <p className="text-[10px] font-mono uppercase" style={{ color: "#8DA5B5" }}>Dispatch Architecture</p>
+            <p className="text-xs font-semibold font-mono mt-1 capitalize text-white">
               {worker.dispatch_mode.replace(/_/g, " ")}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Redis Queue Status</p>
-            <p className="text-sm font-semibold mt-1 flex items-center gap-2">
+            <p className="text-[10px] font-mono uppercase" style={{ color: "#8DA5B5" }}>Queue Broker Status</p>
+            <p className="text-xs font-semibold mt-1 flex items-center gap-2">
               <span
-                className={`w-2 h-2 rounded-full ${
-                  worker.redis_available ? "bg-emerald-400" : "bg-amber-400"
-                }`}
+                className="w-2 h-2 rounded-full"
+                style={{ background: worker.redis_available ? "#36C6A0" : "#F5A623" }}
               />
               <span
-                className={
-                  worker.redis_available
-                    ? "text-emerald-400 font-mono"
-                    : "text-amber-400 font-mono"
-                }
+                className="font-mono text-xs"
+                style={{ color: worker.redis_available ? "#36C6A0" : "#F5A623" }}
               >
-                {worker.redis_available ? "Connected (Live)" : "Fallback Active"}
+                {worker.redis_available ? "Redis Live (Distributed)" : "In-Process Async Fallback"}
               </span>
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Active Workers</p>
-            <p className="text-sm font-semibold text-white mt-1 font-mono">
+            <p className="text-[10px] font-mono uppercase" style={{ color: "#8DA5B5" }}>Active Compute Nodes</p>
+            <p className="text-xs font-mono font-semibold text-white mt-1">
               {worker.celery_workers.length} nodes registered
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Task Broker</p>
-            <p className="text-xs font-mono text-gray-400 mt-1 truncate">
+            <p className="text-[10px] font-mono uppercase" style={{ color: "#8DA5B5" }}>Task Broker URL</p>
+            <p className="text-[11px] font-mono mt-1 truncate" style={{ color: "#8DA5B5" }}>
               {worker.broker_url}
             </p>
           </div>
         </div>
       )}
 
-      {/* Manual lookup input */}
-      <form onSubmit={handleManualLookup} className="flex gap-3">
-        <input
-          value={manualInput}
-          onChange={(e) => setManualInput(e.target.value)}
-          placeholder="Lookup specific run ID: run_1234567890_abc123"
-          className="flex-1 bg-gray-900 border border-gray-800 focus:border-emerald-600 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 font-mono outline-none transition-colors"
-        />
-        <button
-          type="submit"
-          disabled={!manualInput.trim()}
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-600 text-white font-semibold rounded-xl text-sm transition-colors"
-        >
-          Inspect Run
-        </button>
-      </form>
+      {/* Manual lookup input & City Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+        <form onSubmit={handleManualLookup} className="flex-1 flex gap-2">
+          <input
+            value={manualInput}
+            onChange={(e) => setManualInput(e.target.value)}
+            placeholder="Lookup specific run ID: run_1234567890_abc123"
+            className="flex-1 px-3 py-2 rounded text-xs font-mono outline-none transition-colors"
+            style={{
+              background: "#0B1D2B",
+              border: "1px solid #1B3445",
+              color: "#EAF3F8",
+            }}
+          />
+          <button
+            type="submit"
+            disabled={!manualInput.trim()}
+            className="px-4 py-2 text-xs font-medium font-mono rounded transition-colors disabled:opacity-50"
+            style={{
+              background: "#00B8D9",
+              color: "#06111C",
+            }}
+          >
+            Inspect
+          </button>
+        </form>
+
+        {/* City Filter Pills */}
+        <div className="flex items-center gap-1.5 p-1 rounded" style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}>
+          {[
+            { id: "all", label: "All Cities" },
+            { id: "jaipur", label: "Jaipur" },
+            { id: "delhi", label: "Delhi" },
+            { id: "bengaluru", label: "Bengaluru" },
+          ].map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setCityFilter(c.id)}
+              className="px-2.5 py-1 text-[11px] font-medium font-mono rounded transition-colors"
+              style={{
+                background: cityFilter === c.id ? "#00B8D9" : "transparent",
+                color: cityFilter === c.id ? "#06111C" : "#8DA5B5",
+              }}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && (
-        <div className="bg-red-950 border border-red-800 text-red-300 rounded-xl px-4 py-3 text-sm">
+        <div
+          className="p-3 rounded text-xs font-mono"
+          style={{ background: "rgba(239,83,80,0.12)", border: "1px solid #EF5350", color: "#EF5350" }}
+        >
           ⚠ {error}
         </div>
       )}
 
       {/* Main Grid: Run Queue on Left, Details/Analytics on Right */}
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
+      <div className="grid lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Recent Runs List (5 cols) */}
-        <div className="lg:col-span-5 bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white">Recent Simulation Runs</h2>
-            <span className="text-xs text-gray-500 font-mono">
-              {runs.length} runs recorded
+        <div
+          className="lg:col-span-5 p-4 rounded-lg space-y-3"
+          style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+        >
+          <div className="flex items-center justify-between pb-2" style={{ borderBottom: "1px solid #1B3445" }}>
+            <h2 className="text-xs font-bold uppercase tracking-wider text-white">Execution Queue</h2>
+            <span className="text-[11px] font-mono" style={{ color: "#8DA5B5" }}>
+              {filteredRuns.length} runs
             </span>
           </div>
 
           {loadingList ? (
-            <div className="py-12 text-center text-gray-500 text-sm">
+            <div className="py-12 text-center text-xs font-mono" style={{ color: "#8DA5B5" }}>
               Loading simulation runs…
             </div>
-          ) : runs.length === 0 ? (
-            <div className="py-12 text-center text-gray-500 text-sm space-y-2">
-              <p>No simulations found yet.</p>
+          ) : filteredRuns.length === 0 ? (
+            <div className="py-12 text-center text-xs space-y-2" style={{ color: "#8DA5B5" }}>
+              <p>No simulations found for this filter.</p>
               <Link
                 href="/scenarios"
-                className="text-emerald-400 hover:text-emerald-300 text-xs font-medium"
+                className="text-xs font-medium"
+                style={{ color: "#00B8D9" }}
               >
                 Launch a scenario simulation →
               </Link>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-              {runs.map((r) => {
+            <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
+              {filteredRuns.map((r) => {
                 const isSelected = selectedRunId === r.run_id;
                 return (
                   <button
                     key={r.run_id}
                     onClick={() => selectRun(r.run_id)}
-                    className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                      isSelected
-                        ? "bg-emerald-950/40 border-emerald-700 shadow-md shadow-emerald-950"
-                        : "bg-gray-950/50 border-gray-800/80 hover:border-gray-700"
-                    }`}
+                    className="w-full text-left p-3 rounded transition-all"
+                    style={{
+                      background: isSelected ? "rgba(0,184,217,0.12)" : "rgba(6,17,28,0.5)",
+                      border: `1px solid ${isSelected ? "#00B8D9" : "#1B3445"}`,
+                    }}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <StatusBadge status={r.status} />
-                      <span className="text-xs font-mono text-gray-500">
+                      <span className="text-[11px] font-mono" style={{ color: "#8DA5B5" }}>
                         {r.execution_time_seconds != null
                           ? `${r.execution_time_seconds.toFixed(2)}s`
                           : "in queue"}
                       </span>
                     </div>
 
-                    <div className="font-mono text-xs text-white truncate">
+                    <div className="font-mono text-xs text-white truncate font-medium">
                       {r.run_id}
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-gray-500 mt-2 font-mono">
+                    <div className="flex items-center justify-between text-[11px] mt-1.5 font-mono" style={{ color: "#8DA5B5" }}>
                       <span>Seed: {r.seed}</span>
-                      <span>{r.network_id.replace("_v1", "").toUpperCase()}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "rgba(255,255,255,0.05)", color: "#00B8D9" }}>
+                        {r.network_id.replace("_v1", "").toUpperCase()}
+                      </span>
                     </div>
                   </button>
                 );
@@ -335,20 +387,29 @@ export default function SimulationsPage() {
         {/* Right Column: Selected Run Analytics (7 cols) */}
         <div className="lg:col-span-7">
           {loadingMetrics ? (
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center space-y-3">
-              <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="text-sm text-gray-400">Loading telemetry &amp; metrics…</p>
+            <div
+              className="p-12 text-center space-y-3 rounded-lg"
+              style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+            >
+              <div
+                className="w-7 h-7 border-2 rounded-full animate-spin mx-auto"
+                style={{ borderColor: "#00B8D9", borderTopColor: "transparent" }}
+              />
+              <p className="text-xs font-mono" style={{ color: "#8DA5B5" }}>Loading telemetry &amp; metrics…</p>
             </div>
           ) : metrics ? (
             <DetailedMetricsView metrics={metrics} />
           ) : (
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-12 text-center text-gray-500 space-y-3">
-              <div className="text-4xl">📊</div>
-              <h3 className="text-base font-semibold text-gray-300">
+            <div
+              className="p-12 text-center space-y-3 rounded-lg"
+              style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+            >
+              <div className="text-3xl">📊</div>
+              <h3 className="text-sm font-semibold text-white">
                 Select a simulation run
               </h3>
-              <p className="text-sm max-w-md mx-auto">
-                Choose any run from the queue on the left or enter a Run ID above
+              <p className="text-xs max-w-md mx-auto" style={{ color: "#8DA5B5" }}>
+                Choose any run from the execution queue on the left or enter a Run ID above
                 to inspect BPR convergence, delay statistics, and link-level
                 telemetry.
               </p>
@@ -369,63 +430,73 @@ function DetailedMetricsView({ metrics }: { metrics: SimulationMetrics }) {
   const congestedEdges = edgeList.filter((e) => e.congested);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Run Header Banner */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+      <div
+        className="p-5 rounded-lg"
+        style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4 mb-3">
           <div>
-            <span className="text-xs font-mono uppercase text-gray-500">
+            <span className="text-[10px] font-mono uppercase" style={{ color: "#00B8D9" }}>
               Run Telemetry Inspector
             </span>
-            <h2 className="font-mono text-lg font-bold text-white mt-0.5">
+            <h2 className="font-mono text-base font-bold text-white mt-0.5">
               {metrics.run_id}
             </h2>
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge status={metrics.status} />
-            <span className="px-2.5 py-0.5 bg-yellow-950 text-yellow-400 border border-yellow-800 rounded-full text-xs font-mono font-semibold">
+            <span
+              className="px-2 py-0.5 rounded text-[11px] font-mono font-semibold"
+              style={{ background: "rgba(245,166,35,0.12)", color: "#F5A623", border: "1px solid rgba(245,166,35,0.3)" }}
+            >
               {metrics.data_label}
             </span>
           </div>
         </div>
 
         {/* Metadata pills */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono border-t border-gray-800 pt-4">
+        <div
+          className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono pt-3"
+          style={{ borderTop: "1px solid #1B3445" }}
+        >
           <div>
-            <span className="text-gray-500 block">Engine:</span>
-            <span className="text-gray-300">{metrics.engine}</span>
+            <span className="block text-[10px]" style={{ color: "#8DA5B5" }}>Engine:</span>
+            <span className="text-white font-medium">{metrics.engine}</span>
           </div>
           <div>
-            <span className="text-gray-500 block">Corridor:</span>
-            <span className="text-gray-300">{metrics.network_id}</span>
+            <span className="block text-[10px]" style={{ color: "#8DA5B5" }}>Corridor:</span>
+            <span className="text-white font-medium">{metrics.network_id}</span>
           </div>
           <div>
-            <span className="text-gray-500 block">Execution:</span>
-            <span className="text-gray-300">
+            <span className="block text-[10px]" style={{ color: "#8DA5B5" }}>Execution:</span>
+            <span className="text-white font-medium">
               {metrics.execution_time_seconds != null
                 ? `${metrics.execution_time_seconds.toFixed(2)}s`
                 : "N/A"}
             </span>
           </div>
           <div>
-            <span className="text-gray-500 block">Random Seed:</span>
-            <span className="text-gray-300">{metrics.seed}</span>
+            <span className="block text-[10px]" style={{ color: "#8DA5B5" }}>Random Seed:</span>
+            <span className="text-white font-medium">{metrics.seed}</span>
           </div>
         </div>
 
         {/* Quick action button to compare */}
-        <div className="mt-4 pt-3 border-t border-gray-800/80 flex justify-end">
+        <div className="mt-3 pt-2.5 flex justify-end" style={{ borderTop: "1px solid #1B3445" }}>
           <Link
-            href={`/compare`}
-            className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5"
+            href="/compare"
+            className="text-xs font-mono transition-colors flex items-center gap-1.5"
+            style={{ color: "#00B8D9" }}
           >
-            ⚖ Compare this run against another run →
+            ⚖ Compare this run against baseline or scenario →
           </Link>
         </div>
       </div>
 
       {/* Primary Metrics Grid with Visual Gauges */}
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-3">
         {Object.entries(METRIC_CONFIG).map(([key, cfg]) => {
           const item = metrics.metrics[key];
           if (!item) return null;
@@ -434,21 +505,22 @@ function DetailedMetricsView({ metrics }: { metrics: SimulationMetrics }) {
           const ratio = Math.min(1, Math.max(0, numVal / cfg.maxVal));
           const pct = Math.round(ratio * 100);
 
-          // Color calculation (red = bad, green = good)
+          // Color calculation
           const isBad = cfg.inverse ? pct > 60 : pct < 40;
-          const barColor = isBad ? "bg-amber-500" : "bg-emerald-500";
+          const barColor = isBad ? "#F5A623" : "#36C6A0";
 
           return (
             <div
               key={key}
-              className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col justify-between"
+              className="p-3.5 rounded-lg flex flex-col justify-between"
+              style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
             >
               <div>
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <div className="flex items-center justify-between text-xs mb-1" style={{ color: "#8DA5B5" }}>
                   <span>{cfg.label}</span>
-                  <span className="font-mono">{item.unit}</span>
+                  <span className="font-mono text-[11px]">{item.unit}</span>
                 </div>
-                <div className="text-2xl font-bold font-mono text-white">
+                <div className="text-xl font-bold font-mono text-white">
                   {typeof item.value === "number"
                     ? item.value > 10000
                       ? item.value.toLocaleString()
@@ -461,10 +533,10 @@ function DetailedMetricsView({ metrics }: { metrics: SimulationMetrics }) {
 
               {/* Progress bar gauge */}
               <div className="mt-3">
-                <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: "#06111C" }}>
                   <div
-                    className={`h-full ${barColor} rounded-full transition-all`}
-                    style={{ width: `${pct}%` }}
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${pct}%`, background: barColor }}
                   />
                 </div>
               </div>
@@ -475,36 +547,40 @@ function DetailedMetricsView({ metrics }: { metrics: SimulationMetrics }) {
 
       {/* Congested Links Breakdown (if available) */}
       {congestedEdges.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-3">
+        <div
+          className="p-4 rounded-lg space-y-3"
+          style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+        >
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <h3 className="text-xs font-bold uppercase text-white flex items-center gap-1.5">
               <span>🚨</span> Congested Corridor Segments
             </h3>
-            <span className="text-xs font-mono text-amber-400">
+            <span className="text-[11px] font-mono" style={{ color: "#F5A623" }}>
               {congestedEdges.length} links above capacity
             </span>
           </div>
 
-          <div className="space-y-2 max-h-56 overflow-y-auto">
+          <div className="space-y-1.5 max-h-56 overflow-y-auto">
             {congestedEdges.slice(0, 10).map((edge) => (
               <div
                 key={edge.edge_id}
-                className="bg-gray-950/70 border border-gray-800 rounded-lg p-3 text-xs font-mono flex items-center justify-between"
+                className="p-2.5 rounded text-xs font-mono flex items-center justify-between"
+                style={{ background: "rgba(6,17,28,0.7)", border: "1px solid #1B3445" }}
               >
                 <div>
                   <span className="text-white font-semibold">
                     Link {edge.edge_id}
                   </span>
-                  <span className="text-gray-500 block mt-0.5">
+                  <span className="block mt-0.5 text-[10px]" style={{ color: "#8DA5B5" }}>
                     Speed: {edge.average_speed_kmh?.toFixed(1)} km/h · Length:{" "}
                     {Math.round(edge.length_m)}m
                   </span>
                 </div>
                 <div className="text-right">
-                  <span className="text-red-400 font-bold">
+                  <span className="font-bold text-xs" style={{ color: "#EF5350" }}>
                     V/C: {edge.volume_to_capacity_ratio?.toFixed(2)}
                   </span>
-                  <span className="text-gray-500 block mt-0.5">
+                  <span className="block mt-0.5 text-[10px]" style={{ color: "#8DA5B5" }}>
                     {edge.volume_veh} veh / {edge.capacity_veh_hr} cap
                   </span>
                 </div>
@@ -515,23 +591,26 @@ function DetailedMetricsView({ metrics }: { metrics: SimulationMetrics }) {
       )}
 
       {/* Assumptions & Integrity Notice */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 space-y-3">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+      <div
+        className="p-4 rounded-lg space-y-2.5"
+        style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+      >
+        <h3 className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#00B8D9" }}>
           Model Calibration &amp; Scientific Assumptions
         </h3>
-        <ul className="space-y-1.5 text-xs text-gray-400">
+        <ul className="space-y-1 text-xs" style={{ color: "#8DA5B5" }}>
           {metrics.assumptions.map((a, i) => (
             <li key={i} className="flex gap-2">
-              <span className="text-emerald-500">✓</span>
+              <span style={{ color: "#36C6A0" }}>✓</span>
               <span>{a}</span>
             </li>
           ))}
         </ul>
 
         {metrics.warnings.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-800">
-            <p className="text-xs font-bold text-amber-400 mb-1">Warnings:</p>
-            <ul className="space-y-1 text-xs text-amber-300">
+          <div className="mt-2.5 pt-2.5" style={{ borderTop: "1px solid #1B3445" }}>
+            <p className="text-[11px] font-bold mb-1" style={{ color: "#F5A623" }}>Warnings:</p>
+            <ul className="space-y-1 text-xs" style={{ color: "#F5A623" }}>
               {metrics.warnings.map((w, i) => (
                 <li key={i}>⚠ {w}</li>
               ))}
