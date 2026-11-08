@@ -54,6 +54,12 @@ const CITY_COORDS: Record<string, string> = {
   Bengaluru: "12.9°N, 77.6°E",
 };
 
+const CITY_WEATHER: Record<string, { temp: string; cond: string; icon: string }> = {
+  Jaipur: { temp: "29°C", cond: "Clear Sky", icon: "☀️" },
+  Delhi: { temp: "24°C", cond: "Moderate Haze", icon: "🌫️" },
+  Bengaluru: { temp: "23°C", cond: "Partly Cloudy", icon: "⛅" },
+};
+
 export function TopNav({ selectedCity = "Jaipur", onCityChange, cities = ["Jaipur", "Delhi", "Bengaluru"] }: TopNavProps) {
   return (
     <header
@@ -108,13 +114,21 @@ export function TopNav({ selectedCity = "Jaipur", onCityChange, cities = ["Jaipu
       {/* Separator */}
       <div className="h-5 w-px" style={{ background: "#1B3445" }} />
 
-      {/* Weather placeholder */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-base">🌤</span>
-        <span className="text-xs" style={{ color: "#8DA5B5" }}>
-          28°C · Clear
-        </span>
-      </div>
+      {/* Dynamic City Weather */}
+      {(() => {
+        const w = CITY_WEATHER[selectedCity] ?? CITY_WEATHER["Jaipur"];
+        return (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(27,52,69,0.6)" }}>
+            <span className="text-sm">{w.icon}</span>
+            <span className="text-xs font-mono font-medium" style={{ color: "#EAF3F8" }}>
+              {w.temp}
+            </span>
+            <span className="text-[11px]" style={{ color: "#8DA5B5" }}>
+              · {w.cond}
+            </span>
+          </div>
+        );
+      })()}
 
       {/* Flex spacer */}
       <div className="flex-1" />
