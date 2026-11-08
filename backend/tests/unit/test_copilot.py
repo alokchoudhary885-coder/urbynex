@@ -97,6 +97,13 @@ def test_copilot_grounded_answer_with_citations():
     assert len(ans_delhi["citations"]) >= 1
     assert "Delhi Master Plan" in ans_delhi["answer"]
 
+    # Query regarding Bengaluru Silk Board CMP
+    ans_blr = engine.ask("What is the peak hour volume at Silk Board junction in Bengaluru?")
+    assert ans_blr["data_label"] == "CITED_DOCUMENT"
+    assert len(ans_blr["citations"]) >= 1
+    assert "Bengaluru Comprehensive Mobility Plan" in ans_blr["answer"]
+    assert "165,000" in ans_blr["answer"] or "PCU" in ans_blr["answer"]
+
 
 def test_copilot_fallback_on_unsupported_query():
     engine = AICopilotEngine()

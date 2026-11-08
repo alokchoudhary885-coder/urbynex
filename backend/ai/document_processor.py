@@ -63,6 +63,8 @@ class DocumentProcessor:
                 city_id = "jaipur"
             elif "delhi" in fname:
                 city_id = "delhi"
+            elif "bengaluru" in fname or "bangalore" in fname:
+                city_id = "bengaluru"
             else:
                 city_id = "general"
 
