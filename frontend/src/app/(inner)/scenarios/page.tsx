@@ -14,6 +14,12 @@ const SCENARIO_TYPES: { value: ScenarioType; label: string; desc: string }[] = [
   { value: "incident", label: "Traffic Incident / Bottleneck", desc: "Simulate lane obstructions, speed drops, or roadwork." },
 ];
 
+const NETWORK_OPTIONS = [
+  { city_id: "jaipur", network_id: "jaipur_v1", label: "Jaipur (MI Road Corridor)" },
+  { city_id: "delhi", network_id: "delhi_v1", label: "Delhi (Connaught Place Hub)" },
+  { city_id: "bengaluru", network_id: "bengaluru_v1", label: "Bengaluru (Silk Board - ORR)" },
+];
+
 function ScenariosContent() {
   const searchParams = useSearchParams();
   const { data, loading, error, refetch } = useScenarios();
@@ -133,10 +139,34 @@ function ScenariosContent() {
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               Configure New Scenario
             </h2>
-            <span className="text-xs font-mono text-gray-500">Jaipur v1</span>
+            <span className="text-xs font-mono text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
+              {form.network_id}
+            </span>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block">
+              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">City & Road Network *</span>
+              <select
+                value={form.network_id}
+                onChange={(e) => {
+                  const sel = NETWORK_OPTIONS.find((n) => n.network_id === e.target.value);
+                  setForm({
+                    ...form,
+                    network_id: e.target.value,
+                    city_id: sel?.city_id || "jaipur",
+                  });
+                }}
+                className="mt-1 block w-full bg-gray-950 border border-gray-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-medium"
+              >
+                {NETWORK_OPTIONS.map((opt) => (
+                  <option key={opt.network_id} value={opt.network_id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
             <label className="block">
               <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Scenario Title *</span>
               <input

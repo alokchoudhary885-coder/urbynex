@@ -176,9 +176,10 @@ function AssistantBubble({ msg }: { msg: ChatMessage }) {
 // ── Suggested Prompts ────────────────────────────────────────────────────────
 
 const SUGGESTED: string[] = [
-  "What is the congestion level on the Delhi Connaught Place corridor?",
+  "What are the peak hour volume and bus priority plans for Silk Board in Bengaluru?",
   "Explain the signal timing recommendations for Jaipur MI Road.",
   "What infrastructure improvements are planned in the Delhi Master Plan 2041?",
+  "What does the Bengaluru CMP 2035 recommend for Outer Ring Road signal cycles?",
   "Compare the BPR travel time for baseline vs road closure scenarios.",
   "What does the Jaipur CMP 2025 say about transit corridors?",
 ];
@@ -188,6 +189,7 @@ const SUGGESTED: string[] = [
 const CITIES = [
   { id: "jaipur", name: "Jaipur" },
   { id: "delhi", name: "Delhi" },
+  { id: "bengaluru", name: "Bengaluru" },
 ];
 
 // ── Main Page ────────────────────────────────────────────────────────────────
