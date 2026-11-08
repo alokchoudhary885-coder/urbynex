@@ -234,6 +234,7 @@ export function CityMap({
   const [featureCount, setFeatureCount] = useState<number>(0);
   const [hoveredEdge, setHoveredEdge] = useState<SelectedEdge | null>(null);
   const [is3DMode, setIs3DMode] = useState<boolean>(true);
+  const [showHeatmap, setShowHeatmap] = useState<boolean>(false);
 
   const selectedEdgeIdsSet = useRef<Set<string>>(new Set(selectedEdgeIds));
   useEffect(() => {
@@ -328,6 +329,33 @@ export function CityMap({
       setIs3DMode(true);
     }
   }, [is3DMode]);
+
+  // Toggle Heatmap layer visibility
+  const toggleHeatmap = useCallback(() => {
+    setShowHeatmap((prev) => {
+      const next = !prev;
+      if (mapRef.current && mapRef.current.getLayer("network-roads-heatmap")) {
+        mapRef.current.setLayoutProperty(
+          "network-roads-heatmap",
+          "visibility",
+          next ? "visible" : "none"
+        );
+      }
+      return next;
+    });
+  }, []);
+
+  // Smooth cinematic camera fly-to a landmark
+  const flyToLandmark = useCallback((coords: [number, number]) => {
+    if (!mapRef.current) return;
+    mapRef.current.flyTo({
+      center: coords,
+      zoom: 15.5,
+      pitch: 58,
+      bearing: -20,
+      duration: 2200,
+    });
+  }, []);
 
   // Switch basemap style
   const handleBasemapChange = (mode: BasemapMode) => {
@@ -524,6 +552,52 @@ export function CityMap({
                 17, 14,
               ],
               "line-opacity": 1.0,
+            },
+          });
+
+          // Dynamic Congestion Intensity Heatmap Layer
+          map.addLayer({
+            id: "network-roads-heatmap",
+            type: "heatmap",
+            source: "network-roads",
+            layout: {
+              visibility: showHeatmap ? "visible" : "none",
+            },
+            paint: {
+              "heatmap-weight": [
+                "interpolate",
+                ["linear"],
+                ["coalesce", ["get", "capacity"], 1800],
+                1000, 0.2,
+                5400, 1.0,
+              ],
+              "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                11, 0.8,
+                15, 2.8,
+              ],
+              "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                0, "rgba(0, 229, 255, 0)",
+                0.2, "rgba(0, 229, 255, 0.4)",
+                0.4, "rgba(54, 198, 160, 0.7)",
+                0.6, "rgba(255, 214, 0, 0.85)",
+                0.8, "rgba(255, 109, 0, 0.95)",
+                1.0, "rgba(255, 23, 68, 1.0)",
+              ],
+              "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                11, 10,
+                14, 24,
+                17, 50,
+              ],
+              "heatmap-opacity": 0.85,
             },
           });
 
@@ -754,6 +828,21 @@ export function CityMap({
           {is3DMode ? "🏙 3D VIEW" : "🗺 2D FLAT"}
         </button>
 
+        {/* Dynamic Congestion Heatmap Toggle Button */}
+        <button
+          onClick={toggleHeatmap}
+          className="px-2.5 py-1 rounded text-[10px] font-bold tracking-wide transition-all"
+          style={{
+            background: showHeatmap ? "rgba(255,23,68,0.25)" : "rgba(8,24,39,0.85)",
+            border: `1px solid ${showHeatmap ? "#FF1744" : "#1B3445"}`,
+            color: showHeatmap ? "#FF1744" : "#8DA5B5",
+            backdropFilter: "blur(4px)",
+          }}
+          title="Toggle Congestion Heatmap Overlay"
+        >
+          {showHeatmap ? "🔥 HEATMAP ON" : "🔥 HEATMAP"}
+        </button>
+
         {featureCount > 0 && (
           <span
             className="px-2 py-1 rounded text-[9px] font-mono"
@@ -762,6 +851,26 @@ export function CityMap({
             {featureCount.toLocaleString()} segments
           </span>
         )}
+      </div>
+
+      {/* Landmark Quick-Fly Bar */}
+      <div className="absolute top-12 right-3 z-20 hidden md:flex items-center gap-1">
+        {(CITY_LANDMARKS[networkId] || []).slice(0, 3).map((lm) => (
+          <button
+            key={lm.name}
+            onClick={() => flyToLandmark(lm.coords)}
+            className="px-2 py-1 rounded text-[8.5px] font-bold transition-all truncate max-w-[140px]"
+            style={{
+              background: "rgba(6,17,28,0.92)",
+              border: "1px solid rgba(0,184,217,0.35)",
+              color: "#EAF3F8",
+              backdropFilter: "blur(6px)",
+            }}
+            title={`Cinematic Fly to ${lm.name}`}
+          >
+            {lm.icon} {lm.name}
+          </button>
+        ))}
       </div>
 
       {/* Selected Interventions Pill */}
