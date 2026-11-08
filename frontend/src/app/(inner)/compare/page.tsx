@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * frontend/src/app/compare/page.tsx
+ * frontend/src/app/(inner)/compare/page.tsx
  *
- * M6.4: Production Scenario Comparison Studio
+ * Command Center Scenario Comparison Studio
  * - Side-by-side run picker from recent runs or manual IDs
  * - Visual delta metrics with improvement direction indicators
  * - Scenario intervention diff & warning indicators
@@ -26,7 +26,7 @@ export default function ComparePage() {
   // Fetch recent runs for quick selection
   useEffect(() => {
     api
-      .listSimulations(15)
+      .listSimulations(20)
       .then((res) => {
         setRecentRuns(res.runs);
         if (res.runs.length >= 2) {
@@ -66,45 +66,56 @@ export default function ComparePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10 space-y-8">
+    <div
+      className="min-h-screen px-6 py-6 space-y-6"
+      style={{ background: "#06111C", color: "#EAF3F8" }}
+    >
       {/* Header */}
-      <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-950 border border-emerald-800 rounded-full text-emerald-400 text-xs font-mono mb-2">
-          Milestone 6.4 · Scenario Analytics
+      <div className="pb-4" style={{ borderBottom: "1px solid #1B3445" }}>
+        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded text-[11px] font-mono mb-2" style={{ background: "rgba(0,184,217,0.12)", color: "#00B8D9", border: "1px solid rgba(0,184,217,0.3)" }}>
+          URBAN SCENARIO INTELLIGENCE · IMPACT DELTAS
         </div>
-        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-          <span>⚖️</span> Scenario Comparison Studio
+        <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+          <span style={{ color: "#00B8D9" }}>⚖️</span> Scenario Comparison Studio
         </h1>
-        <p className="text-gray-400 text-sm max-w-2xl">
+        <p className="text-xs mt-0.5 max-w-2xl" style={{ color: "#8DA5B5" }}>
           Compare two simulation runs side-by-side to evaluate the traffic
           impact of road closures, signal timings, incidents, or peak demand
-          surges.
+          surges across urban networks.
         </p>
       </div>
 
       {/* Comparison Selector Form */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-        <form onSubmit={handleCompare} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6 relative">
+      <div
+        className="p-5 rounded-lg space-y-5"
+        style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+      >
+        <form onSubmit={handleCompare} className="space-y-5">
+          <div className="grid md:grid-cols-2 gap-5 relative">
             {/* Baseline Column */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-300 uppercase tracking-wider">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-white">
                   Baseline Run (Control)
                 </label>
-                <span className="text-xs text-gray-500 font-mono">Reference</span>
+                <span className="text-[10px] font-mono" style={{ color: "#8DA5B5" }}>Reference Network</span>
               </div>
 
               {recentRuns.length > 0 && (
                 <select
                   value={baseId}
                   onChange={(e) => setBaseId(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 font-mono outline-none focus:border-emerald-600 mb-2"
+                  className="w-full rounded px-3 py-1.5 text-xs font-mono outline-none mb-1.5"
+                  style={{
+                    background: "#06111C",
+                    border: "1px solid #1B3445",
+                    color: "#EAF3F8",
+                  }}
                 >
                   <option value="">-- Select from recent runs --</option>
                   {recentRuns.map((r) => (
-                    <option key={r.run_id} value={r.run_id}>
-                      {r.run_id} ({r.network_id.replace("_v1", "")} - seed {r.seed})
+                    <option key={r.run_id} value={r.run_id} style={{ background: "#0B1D2B" }}>
+                      {r.run_id} ({r.network_id.replace("_v1", "").toUpperCase()} - seed {r.seed})
                     </option>
                   ))}
                 </select>
@@ -115,29 +126,39 @@ export default function ComparePage() {
                 value={baseId}
                 onChange={(e) => setBaseId(e.target.value)}
                 placeholder="Or paste baseline run ID..."
-                className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-gray-600 focus:outline-none focus:border-emerald-600"
+                className="w-full rounded px-3 py-2 text-xs font-mono outline-none"
+                style={{
+                  background: "#06111C",
+                  border: "1px solid #1B3445",
+                  color: "#EAF3F8",
+                }}
               />
             </div>
 
             {/* Target Column */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "#00B8D9" }}>
                   Target Run (Intervention)
                 </label>
-                <span className="text-xs text-gray-500 font-mono">Simulated</span>
+                <span className="text-[10px] font-mono" style={{ color: "#8DA5B5" }}>Simulated Policy</span>
               </div>
 
               {recentRuns.length > 0 && (
                 <select
                   value={targetId}
                   onChange={(e) => setTargetId(e.target.value)}
-                  className="w-full bg-gray-950 border border-gray-800 rounded-xl px-3 py-2 text-xs text-gray-300 font-mono outline-none focus:border-emerald-600 mb-2"
+                  className="w-full rounded px-3 py-1.5 text-xs font-mono outline-none mb-1.5"
+                  style={{
+                    background: "#06111C",
+                    border: "1px solid #1B3445",
+                    color: "#EAF3F8",
+                  }}
                 >
                   <option value="">-- Select from recent runs --</option>
                   {recentRuns.map((r) => (
-                    <option key={r.run_id} value={r.run_id}>
-                      {r.run_id} ({r.network_id.replace("_v1", "")} - seed {r.seed})
+                    <option key={r.run_id} value={r.run_id} style={{ background: "#0B1D2B" }}>
+                      {r.run_id} ({r.network_id.replace("_v1", "").toUpperCase()} - seed {r.seed})
                     </option>
                   ))}
                 </select>
@@ -148,17 +169,23 @@ export default function ComparePage() {
                 value={targetId}
                 onChange={(e) => setTargetId(e.target.value)}
                 placeholder="Or paste target run ID..."
-                className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-white font-mono placeholder-gray-600 focus:outline-none focus:border-emerald-600"
+                className="w-full rounded px-3 py-2 text-xs font-mono outline-none"
+                style={{
+                  background: "#06111C",
+                  border: "1px solid #1B3445",
+                  color: "#EAF3F8",
+                }}
               />
             </div>
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-800/80">
+          <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid #1B3445" }}>
             <button
               type="button"
               onClick={swapRuns}
-              className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1.5"
+              className="text-xs font-mono transition-colors flex items-center gap-1.5"
+              style={{ color: "#8DA5B5" }}
             >
               ⇄ Swap Baseline &amp; Target
             </button>
@@ -166,7 +193,11 @@ export default function ComparePage() {
             <button
               type="submit"
               disabled={loading || !baseId.trim() || !targetId.trim()}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-600 text-white font-semibold rounded-xl text-sm transition-colors shadow-lg shadow-emerald-950"
+              className="px-5 py-2 text-xs font-mono font-medium rounded transition-colors disabled:opacity-50"
+              style={{
+                background: "#00B8D9",
+                color: "#06111C",
+              }}
             >
               {loading ? "Computing Deltas…" : "Compare Runs Side-by-Side"}
             </button>
@@ -175,7 +206,10 @@ export default function ComparePage() {
       </div>
 
       {error && (
-        <div className="bg-red-950 border border-red-800 text-red-300 rounded-2xl px-5 py-4 text-sm">
+        <div
+          className="p-3 rounded text-xs font-mono"
+          style={{ background: "rgba(239,83,80,0.12)", border: "1px solid #EF5350", color: "#EF5350" }}
+        >
           ⚠ {error}
         </div>
       )}
@@ -192,40 +226,50 @@ function ComparisonResultDisplay({ result }: { result: ComparisonResult }) {
   const totalCount = result.metric_diffs.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Executive Summary Card */}
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+      <div
+        className="p-5 rounded-lg space-y-3"
+        style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
-            <h2 className="text-base font-bold text-white">
+            <span className="text-base" style={{ color: "#00B8D9" }}>📊</span>
+            <h2 className="text-sm font-bold text-white">
               Comparative Impact Analysis
             </h2>
           </div>
           <div className="flex items-center gap-2">
             <span
-              className={`px-3 py-1 rounded-full text-xs font-mono font-semibold border ${
-                improvedCount >= totalCount / 2
-                  ? "bg-emerald-950 text-emerald-400 border-emerald-800"
-                  : "bg-amber-950 text-amber-400 border-amber-800"
-              }`}
+              className="px-2.5 py-0.5 rounded text-[11px] font-mono font-semibold"
+              style={{
+                background: improvedCount >= totalCount / 2 ? "rgba(54,198,160,0.12)" : "rgba(245,166,35,0.12)",
+                color: improvedCount >= totalCount / 2 ? "#36C6A0" : "#F5A623",
+                border: `1px solid ${improvedCount >= totalCount / 2 ? "rgba(54,198,160,0.3)" : "rgba(245,166,35,0.3)"}`,
+              }}
             >
               {improvedCount}/{totalCount} Metrics Improved
             </span>
-            <span className="px-2.5 py-1 bg-yellow-950 text-yellow-400 border border-yellow-800 rounded-full text-xs font-mono">
+            <span
+              className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold"
+              style={{ background: "rgba(0,184,217,0.12)", color: "#00B8D9", border: "1px solid rgba(0,184,217,0.3)" }}
+            >
               SIMULATED DELTAS
             </span>
           </div>
         </div>
 
-        <p className="text-gray-300 text-sm leading-relaxed bg-gray-950/60 p-4 rounded-xl border border-gray-800 font-mono">
+        <p
+          className="text-xs leading-relaxed p-3.5 rounded font-mono"
+          style={{ background: "rgba(6,17,28,0.7)", border: "1px solid #1B3445", color: "#EAF3F8" }}
+        >
           {result.summary}
         </p>
 
         {result.warnings.length > 0 && (
           <div className="space-y-1">
             {result.warnings.map((w, i) => (
-              <p key={i} className="text-amber-400 text-xs flex items-center gap-1.5">
+              <p key={i} className="text-xs flex items-center gap-1.5" style={{ color: "#F5A623" }}>
                 <span>⚠</span> {w}
               </p>
             ))}
@@ -235,65 +279,66 @@ function ComparisonResultDisplay({ result }: { result: ComparisonResult }) {
 
       {/* Metric Diffs Visual Grid */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-white">Metric-by-Metric Breakdown</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-white">Metric-by-Metric Breakdown</h3>
+        <div className="grid sm:grid-cols-2 gap-3">
           {result.metric_diffs.map((diff) => {
             const isPositive = diff.percent_change >= 0;
 
             return (
               <div
                 key={diff.metric_name}
-                className="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col justify-between"
+                className="p-3.5 rounded-lg flex flex-col justify-between"
+                style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-white capitalize">
+                    <span className="text-xs font-semibold text-white capitalize">
                       {diff.metric_name.replace(/_/g, " ")}
                     </span>
                     <span
-                      className={`px-2 py-0.5 rounded text-xs font-mono font-bold ${
-                        diff.improved
-                          ? "bg-emerald-950 text-emerald-400 border border-emerald-800"
-                          : "bg-red-950 text-red-400 border border-red-800"
-                      }`}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono font-bold"
+                      style={{
+                        background: diff.improved ? "rgba(54,198,160,0.12)" : "rgba(239,83,80,0.12)",
+                        color: diff.improved ? "#36C6A0" : "#EF5350",
+                        border: `1px solid ${diff.improved ? "rgba(54,198,160,0.3)" : "rgba(239,83,80,0.3)"}`,
+                      }}
                     >
                       {diff.improved ? "✓ Improved" : "✗ Degraded"}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs font-mono text-gray-400 my-3">
-                    <div className="bg-gray-950/60 p-2.5 rounded-lg border border-gray-800">
-                      <span className="text-gray-600 block text-[10px]">
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono my-2.5">
+                    <div className="p-2 rounded" style={{ background: "rgba(6,17,28,0.7)", border: "1px solid #1B3445" }}>
+                      <span className="block text-[10px]" style={{ color: "#8DA5B5" }}>
                         BASELINE
                       </span>
-                      <span className="text-white text-sm font-bold">
+                      <span className="text-white text-xs font-bold">
                         {diff.baseline_value.toFixed(1)}
                       </span>
-                      <span className="text-gray-500 ml-1">{diff.unit}</span>
+                      <span className="ml-1 text-[10px]" style={{ color: "#8DA5B5" }}>{diff.unit}</span>
                     </div>
 
-                    <div className="bg-gray-950/60 p-2.5 rounded-lg border border-gray-800">
-                      <span className="text-gray-600 block text-[10px]">
+                    <div className="p-2 rounded" style={{ background: "rgba(6,17,28,0.7)", border: "1px solid #1B3445" }}>
+                      <span className="block text-[10px]" style={{ color: "#8DA5B5" }}>
                         TARGET
                       </span>
-                      <span className="text-white text-sm font-bold">
+                      <span className="text-white text-xs font-bold">
                         {diff.target_value.toFixed(1)}
                       </span>
-                      <span className="text-gray-500 ml-1">{diff.unit}</span>
+                      <span className="ml-1 text-[10px]" style={{ color: "#8DA5B5" }}>{diff.unit}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Percentage delta bar */}
-                <div className="pt-2 border-t border-gray-800/80 flex items-center justify-between text-xs font-mono">
-                  <span className="text-gray-500">
+                <div className="pt-2 flex items-center justify-between text-xs font-mono" style={{ borderTop: "1px solid #1B3445" }}>
+                  <span style={{ color: "#8DA5B5" }}>
                     Net Delta: {diff.absolute_change > 0 ? "+" : ""}
                     {diff.absolute_change.toFixed(1)} {diff.unit}
                   </span>
                   <span
-                    className={`font-bold ${
-                      diff.improved ? "text-emerald-400" : "text-red-400"
-                    }`}
+                    className="font-bold text-xs"
+                    style={{ color: diff.improved ? "#36C6A0" : "#EF5350" }}
                   >
                     {isPositive ? "+" : ""}
                     {diff.percent_change.toFixed(1)}%
@@ -306,18 +351,22 @@ function ComparisonResultDisplay({ result }: { result: ComparisonResult }) {
       </div>
 
       {/* Next Steps CTA */}
-      <div className="p-5 bg-gray-900 border border-gray-800 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div
+        className="p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4"
+        style={{ background: "#0B1D2B", border: "1px solid #1B3445" }}
+      >
         <div>
-          <h4 className="text-sm font-semibold text-white">
+          <h4 className="text-xs font-semibold text-white">
             Have questions about this comparison?
           </h4>
-          <p className="text-xs text-gray-400 mt-0.5">
-            Ask AI Copilot to explain why travel times changed between these two runs.
+          <p className="text-[11px] mt-0.5" style={{ color: "#8DA5B5" }}>
+            Ask AI Copilot to explain why travel times and corridor throughput changed between these two runs.
           </p>
         </div>
         <Link
-          href={`/ai`}
-          className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-colors shrink-0"
+          href="/ai"
+          className="px-4 py-2 text-xs font-mono font-medium rounded transition-colors shrink-0"
+          style={{ background: "#00B8D9", color: "#06111C" }}
         >
           🤖 Ask Copilot About This Delta →
         </Link>
